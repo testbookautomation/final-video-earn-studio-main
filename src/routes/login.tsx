@@ -9,6 +9,9 @@ import {
   IndianRupee,
   Trophy,
   CheckCircle2,
+  Lock,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import {
   getOrCreateUserSession,
@@ -371,15 +374,46 @@ function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-10 bg-tb-bg">
-        <div className="w-full max-w-sm fade-up">
-          {/* Mobile logo (hidden on desktop) */}
-          <div className="lg:hidden text-center mb-8">
-            <img
-              src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
-              alt="Testbook"
-              className="h-8 w-auto mx-auto"
-            />
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-10 bg-gradient-to-b from-blue-50/60 to-white relative overflow-hidden">
+        {/* Subtle background orbs */}
+        <div className="absolute -top-20 -right-20 size-64 rounded-full bg-blue-100/60 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 -left-10 size-48 rounded-full bg-indigo-100/40 blur-2xl pointer-events-none" />
+
+        <div className="w-full max-w-sm fade-up relative">
+
+          {/* Mobile hero (hidden on desktop) */}
+          <div className="lg:hidden mb-8">
+            <div className="tb-gradient rounded-2xl p-5 text-white text-center relative overflow-hidden">
+              <div className="absolute inset-0 dot-grid opacity-20" />
+              <div className="relative">
+                <img
+                  src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
+                  alt="Testbook"
+                  className="h-6 w-auto mx-auto mb-3 opacity-90"
+                />
+                <p className="text-sm font-semibold text-white/90 leading-relaxed">
+                  Share your story. Earn up to <span className="text-yellow-300 font-black">₹25,000</span> via UPI.
+                </p>
+                <div className="flex justify-center gap-4 mt-3">
+                  {stats.map(({ k, v }) => (
+                    <div key={k} className="text-center">
+                      <div className="text-base font-black">{k}</div>
+                      <div className="text-[10px] text-white/60">{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust badge */}
+          <div className="flex items-center justify-center gap-1.5 mb-5">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-border shadow-sm text-[11px] text-muted-foreground font-medium">
+              <Lock className="size-3 text-emerald-500" />
+              OTP verified · Secure login
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
           </div>
 
           {/* Step indicator */}
@@ -390,7 +424,12 @@ function LoginPage() {
               done={step === "otp"}
               label="Phone"
             />
-            <div className="flex-1 h-px bg-border" />
+            <div className="flex-1 h-0.5 rounded-full overflow-hidden bg-border">
+              <div
+                className="h-full tb-gradient transition-all duration-500"
+                style={{ width: step === "otp" ? "100%" : "0%" }}
+              />
+            </div>
             <StepDot
               n={2}
               active={step === "otp"}
@@ -400,9 +439,13 @@ function LoginPage() {
           </div>
 
           {/* Heading */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-black text-tb-navy">
-              {step === "phone" ? "Enter your number" : "Verify your number"}
+          <div className="mb-5">
+            <h1 className="text-2xl font-black text-tb-navy flex items-center gap-2">
+              {step === "phone" ? (
+                <><Phone className="size-5 text-tb-blue" /> Enter your number</>
+              ) : (
+                <><ShieldCheck className="size-5 text-emerald-500" /> Verify your number</>
+              )}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
               {step === "phone" ? (
@@ -418,151 +461,191 @@ function LoginPage() {
           </div>
 
           {/* Card */}
-          <div className="card p-6 shadow-lg">
-            {step === "phone" ? (
-              <form onSubmit={sendOtp} className="space-y-4">
-                <div>
-                  <label className="text-sm font-semibold text-tb-navy block mb-1.5">
-                    Mobile number
-                  </label>
-                  <div className="flex items-stretch rounded-xl border border-border bg-white overflow-hidden focus-within:border-tb-blue focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                    <span className="px-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground border-r border-border bg-secondary/50 shrink-0">
-                      <Phone className="size-3.5" /> +91
-                    </span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      autoFocus
-                      maxLength={10}
-                      placeholder="98XXXXXXXX"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value.replace(/\D/g, ""));
-                        setError(null);
-                      }}
-                      className="flex-1 px-3 py-3.5 bg-transparent outline-none text-base font-medium tracking-wide"
-                    />
-                  </div>
-                  {error && (
-                    <p className="mt-2 text-xs text-red-600">{error}</p>
-                  )}
-                </div>
+          <div className="rounded-2xl border border-border bg-white shadow-xl shadow-blue-900/5 overflow-hidden">
+            {/* Gradient top accent */}
+            <div className="h-1 w-full tb-gradient" />
 
-                <button
-                  disabled={!validPhone || busy}
-                  className="btn-primary w-full text-base py-3.5"
-                >
-                  {loading === "send" ? (
-                    <>
-                      <span className="spinner" /> Sending…
-                    </>
-                  ) : (
-                    <>
-                      Send OTP <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </button>
-
-                <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                  By continuing you agree to our campaign terms &amp; content
-                  policy.
-                </p>
-              </form>
-            ) : (
-              <form onSubmit={verify} className="space-y-5">
-                {/* OTP boxes */}
-                <div>
-                  <label className="text-sm font-semibold text-tb-navy block mb-3">
-                    Enter 6-digit OTP
-                  </label>
-                  <div className="flex gap-1.5 sm:gap-2 justify-center">
-                    {otp.map((d, i) => (
+            <div className="p-6">
+              {step === "phone" ? (
+                <form onSubmit={sendOtp} className="space-y-4">
+                  <div>
+                    <label className="text-sm font-semibold text-tb-navy block mb-1.5">
+                      Mobile number
+                    </label>
+                    <div className="flex items-stretch rounded-xl border border-border bg-white overflow-hidden focus-within:border-tb-blue focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+                      <span className="px-3 flex items-center gap-1.5 text-sm font-semibold text-tb-navy border-r border-border bg-blue-50/60 shrink-0">
+                        <span className="text-base">🇮🇳</span> +91
+                      </span>
                       <input
-                        key={i}
-                        ref={(el) => {
-                          refs.current[i] = el;
-                        }}
+                        type="tel"
                         inputMode="numeric"
-                        maxLength={1}
-                        value={d}
-                        onChange={(e) => handleOtp(i, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, i)}
-                        onPaste={i === 0 ? handlePaste : undefined}
-                        className="otp-box"
+                        autoFocus
+                        maxLength={10}
+                        placeholder="98XXXXXXXX"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value.replace(/\D/g, ""));
+                          setError(null);
+                        }}
+                        className="flex-1 px-3 py-3.5 bg-transparent outline-none text-base font-medium tracking-widest"
                       />
-                    ))}
+                      {validPhone && (
+                        <span className="pr-3 flex items-center">
+                          <CheckCircle2 className="size-4 text-emerald-500" />
+                        </span>
+                      )}
+                    </div>
+                    {error && (
+                      <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                        <span className="size-3 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">!</span>
+                        {error}
+                      </p>
+                    )}
                   </div>
-                  {error && (
-                    <p className="mt-3 text-xs text-red-600 text-center">
-                      {error}
-                    </p>
-                  )}
-                </div>
 
-                {/* OTP hint */}
-                <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-700">
-                  <ShieldCheck className="size-4 mt-0.5 shrink-0 text-tb-blue" />
-                  <p className="text-xs leading-relaxed">
-                    Enter the 6-digit OTP sent to your phone to continue.
-                  </p>
-                </div>
-
-                <button
-                  disabled={!otpFilled || busy}
-                  className="btn-primary w-full text-base py-3.5"
-                >
-                  {loading === "verify" ? (
-                    <>
-                      <span className="spinner" /> Verifying…
-                    </>
-                  ) : (
-                    <>
-                      Verify &amp; continue <ArrowRight className="size-4" />
-                    </>
-                  )}
-                </button>
-
-                <div className="flex items-center justify-between text-xs">
                   <button
-                    type="button"
-                    onClick={goBack}
-                    className="text-muted-foreground hover:text-tb-navy transition-colors"
+                    disabled={!validPhone || busy}
+                    className="btn-primary w-full text-base py-3.5 group"
                   >
-                    ← Change number
+                    {loading === "send" ? (
+                      <>
+                        <span className="spinner" /> Sending…
+                      </>
+                    ) : (
+                      <>
+                        Send OTP
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                      </>
+                    )}
                   </button>
-                  {resend > 0 ? (
-                    <span className="text-muted-foreground">
-                      Resend in {resend}s
-                    </span>
-                  ) : (
+
+                  <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+                    By continuing you agree to our campaign terms &amp; content
+                    policy.
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={verify} className="space-y-5">
+                  {/* OTP boxes */}
+                  <div>
+                    <label className="text-sm font-semibold text-tb-navy block mb-3">
+                      Enter 6-digit OTP
+                    </label>
+                    <div className="flex gap-2 justify-center">
+                      {otp.map((d, i) => (
+                        <input
+                          key={i}
+                          ref={(el) => {
+                            refs.current[i] = el;
+                          }}
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={d}
+                          onChange={(e) => handleOtp(i, e.target.value)}
+                          onKeyDown={(e) => handleKeyDown(e, i)}
+                          onPaste={i === 0 ? handlePaste : undefined}
+                          className={`
+                            w-11 h-13 sm:w-12 text-center text-xl font-black rounded-xl border-2 outline-none
+                            transition-all duration-150 bg-blue-50/40
+                            ${d
+                              ? "border-tb-blue bg-blue-50 text-tb-navy scale-105 shadow-sm shadow-blue-200"
+                              : "border-border text-tb-navy focus:border-tb-blue focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                            }
+                          `}
+                          style={{ height: "52px" }}
+                        />
+                      ))}
+                    </div>
+                    {error && (
+                      <p className="mt-3 text-xs text-red-600 text-center flex items-center justify-center gap-1">
+                        <span className="size-3 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">!</span>
+                        {error}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* OTP hint */}
+                  <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800">
+                    <ShieldCheck className="size-4 mt-0.5 shrink-0 text-emerald-600" />
+                    <p className="text-xs leading-relaxed">
+                      Enter the 6-digit OTP sent to <span className="font-bold">+91 {phone}</span>. Valid for 10 minutes.
+                    </p>
+                  </div>
+
+                  <button
+                    disabled={!otpFilled || busy}
+                    className="btn-primary w-full text-base py-3.5 group"
+                  >
+                    {loading === "verify" ? (
+                      <>
+                        <span className="spinner" /> Verifying…
+                      </>
+                    ) : (
+                      <>
+                        Verify &amp; continue
+                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between text-xs">
                     <button
                       type="button"
-                      disabled={busy}
-                      onClick={handleResend}
-                      className="text-tb-blue font-medium flex items-center gap-1 disabled:opacity-60"
+                      onClick={goBack}
+                      className="text-muted-foreground hover:text-tb-navy transition-colors font-medium"
                     >
-                      {loading === "send" ? (
-                        <span className="spinner" />
-                      ) : (
-                        <RefreshCw className="size-3" />
-                      )}{" "}
-                      Resend OTP
+                      ← Change number
                     </button>
-                  )}
-                </div>
-              </form>
-            )}
+                    {resend > 0 ? (
+                      <span className="text-muted-foreground tabular-nums">
+                        Resend in <span className="font-semibold text-tb-navy">{resend}s</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={handleResend}
+                        className="text-tb-blue font-semibold flex items-center gap-1 disabled:opacity-60 hover:underline"
+                      >
+                        {loading === "send" ? (
+                          <span className="spinner" />
+                        ) : (
+                          <RefreshCw className="size-3" />
+                        )}{" "}
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
 
-          <p className="text-[11px] text-center text-muted-foreground mt-5">
-            Need help?{" "}
+          {/* Footer trust row */}
+          <div className="mt-5 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Lock className="size-3 text-emerald-500" /> 256-bit secure
+            </span>
+            <span className="size-1 rounded-full bg-border" />
+            <span className="flex items-center gap-1">
+              <Star className="size-3 text-amber-400 fill-amber-400" /> 12K+ creators
+            </span>
+            <span className="size-1 rounded-full bg-border" />
             <a
-              className="text-tb-blue font-medium"
+              className="text-tb-blue font-medium hover:underline"
               href="mailto:creators@testbook.com"
             >
-              creators@testbook.com
+              Help
             </a>
-          </p>
+          </div>
+
+          {/* Floating social proof pill */}
+          <div className="mt-4 flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-border shadow-sm text-xs text-muted-foreground">
+              <Sparkles className="size-3 text-tb-blue" />
+              <span>Avg. payout <span className="font-bold text-tb-navy">₹11,200</span> per creator</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -583,18 +666,18 @@ function StepDot({
   return (
     <div className="flex items-center gap-1.5">
       <div
-        className={`size-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+        className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
           done
-            ? "tb-gradient text-white"
+            ? "tb-gradient text-white shadow-blue-200"
             : active
-              ? "border-2 border-tb-blue text-tb-blue bg-white"
+              ? "border-2 border-tb-blue text-tb-blue bg-white shadow-blue-100"
               : "border-2 border-border text-muted-foreground bg-white"
         }`}
       >
         {done ? <CheckCircle2 className="size-4" /> : n}
       </div>
       <span
-        className={`text-xs font-medium ${active ? "text-tb-navy" : "text-muted-foreground"}`}
+        className={`text-xs font-semibold ${active ? "text-tb-navy" : "text-muted-foreground"}`}
       >
         {label}
       </span>
