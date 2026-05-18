@@ -24,7 +24,11 @@ export type TBSubmission = {
   examCategory: string;
   platform: "instagram" | "youtube" | "facebook";
   followers: string;
+  videoMode: "upload" | "link";
   videoUrl: string;
+  videoFileName?: string;
+  videoFileSize?: number;
+  cdnUrl?: string;       // LMS CDN URL after successful upload
   caption: string;
   consent: boolean;
   status: SubmissionStatus;

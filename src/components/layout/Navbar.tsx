@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Menu, X, ChevronDown, LogOut, LayoutDashboard, FileText, Send, Sparkles } from "lucide-react";
+import { Menu, X, ChevronDown, LogOut, LayoutDashboard, FileText, Send } from "lucide-react";
 import { clearUser, getUser, type TBUser } from "@/lib/auth";
 
 const links = [
@@ -38,16 +38,16 @@ export function Navbar() {
   const initials = user?.phone ? user.phone.slice(-2) : "TB";
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur bg-white/80 border-b border-border">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-border shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="size-9 rounded-xl tb-gradient flex items-center justify-center shadow-md">
-            <Sparkles className="size-5 text-white" />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[15px] font-bold text-tb-navy">Testbook</div>
-            <div className="text-[11px] font-semibold text-tb-blue -mt-0.5">Creator Lab</div>
-          </div>
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <img
+            src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+            alt="Testbook"
+            className="h-8 w-auto"
+          />
+          <div className="h-5 w-px bg-border" />
+          <span className="text-xs font-bold text-tb-blue tracking-widest uppercase">Creator Lab</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -57,8 +57,10 @@ export function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active ? "text-tb-blue bg-blue-50" : "text-foreground/70 hover:text-tb-navy hover:bg-secondary"
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  active
+                    ? "text-tb-blue bg-blue-50 border border-blue-100"
+                    : "text-foreground/70 hover:text-tb-navy hover:bg-secondary"
                 }`}
               >
                 {l.label}
@@ -72,12 +74,12 @@ export function Navbar() {
             <div className="relative hidden md:block">
               <button
                 onClick={() => setMenu((v) => !v)}
-                className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-border hover:border-tb-blue transition-colors"
+                className="flex items-center gap-2 pl-1 pr-3 py-1.5 rounded-full border border-border hover:border-tb-blue transition-colors bg-white"
               >
                 <span className="size-8 rounded-full tb-gradient text-white flex items-center justify-center text-xs font-bold uppercase">
                   {initials}
                 </span>
-                <span className="text-sm font-medium text-tb-navy">+91 {user.phone.slice(-4)}</span>
+                <span className="text-sm font-semibold text-tb-navy">+91 {user.phone.slice(-4)}</span>
                 <ChevronDown className="size-4 text-muted-foreground" />
               </button>
               {menu && (
@@ -116,22 +118,25 @@ export function Navbar() {
         </div>
       </div>
       {open && (
-        <div className="md:hidden border-t border-border bg-white fade-up">
+        <div className="md:hidden border-t border-border bg-white fade-up shadow-lg">
           <div className="px-4 py-3 flex flex-col gap-1">
-            {links.map((l) => (
-              <Link key={l.to} to={l.to} className="px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-secondary">
-                {l.label}
-              </Link>
-            ))}
+            {links.map((l) => {
+              const active = location.pathname === l.to;
+              return (
+                <Link key={l.to} to={l.to} className={`px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${active ? "bg-blue-50 text-tb-blue" : "hover:bg-secondary text-foreground/80"}`}>
+                  {l.label}
+                </Link>
+              );
+            })}
             {user ? (
               <button
                 onClick={() => { clearUser(); navigate({ to: "/" }); }}
-                className="text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50"
+                className="text-left px-4 py-3 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 mt-1"
               >
                 Sign out
               </button>
             ) : (
-              <Link to="/login" className="btn-primary mt-1">Login</Link>
+              <Link to="/login" className="btn-primary mt-2 text-sm">Login to Creator Lab</Link>
             )}
           </div>
         </div>

@@ -78,6 +78,13 @@ function SOPPage() {
     <>
       <section className="tb-gradient text-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-14 md:py-20 fade-up">
+          <div className="flex items-center gap-3 mb-4">
+            <img
+              src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+              alt="Testbook"
+              className="h-7 w-auto brightness-0 invert opacity-90"
+            />
+          </div>
           <span className="badge bg-white/10 text-white border-white/20"><Lightbulb className="size-3.5" /> Creator SOP</span>
           <h1 className="mt-3 text-3xl md:text-5xl font-bold tb-text-gradient">The 60-second formula that gets approved</h1>
           <p className="mt-4 max-w-2xl text-white/80">Read this once. Save your draft. We approve ~85% of submissions on the first try when creators follow this.</p>

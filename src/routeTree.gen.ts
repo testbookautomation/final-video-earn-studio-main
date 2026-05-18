@@ -9,16 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SopRouteImport } from './routes/sop'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
+import { Route as ApiUploadLmsRouteImport } from './routes/api/upload-lms'
 import { Route as ApiSubmitRouteImport } from './routes/api/submit'
 import { Route as ApiFetchUpiRouteImport } from './routes/api/fetch-upi'
 import { Route as AuthenticatedSubmitRouteImport } from './routes/_authenticated/submit'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SopRoute = SopRouteImport.update({
   id: '/sop',
   path: '/sop',
@@ -41,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiWebhookRoute = ApiWebhookRouteImport.update({
   id: '/api/webhook',
   path: '/api/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadLmsRoute = ApiUploadLmsRouteImport.update({
+  id: '/api/upload-lms',
+  path: '/api/upload-lms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSubmitRoute = ApiSubmitRouteImport.update({
@@ -68,20 +80,24 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/sop': typeof SopRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/sop': typeof SopRoute
+  '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
 }
 export interface FileRoutesById {
@@ -90,10 +106,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/sop': typeof SopRoute
+  '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
 }
 export interface FileRouteTypes {
@@ -102,20 +120,24 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/sop'
+    | '/terms'
     | '/dashboard'
     | '/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/upload-lms'
     | '/api/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/sop'
+    | '/terms'
     | '/dashboard'
     | '/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/upload-lms'
     | '/api/webhook'
   id:
     | '__root__'
@@ -123,10 +145,12 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/sop'
+    | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/upload-lms'
     | '/api/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -135,13 +159,22 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SopRoute: typeof SopRoute
+  TermsRoute: typeof TermsRoute
   ApiFetchUpiRoute: typeof ApiFetchUpiRoute
   ApiSubmitRoute: typeof ApiSubmitRoute
+  ApiUploadLmsRoute: typeof ApiUploadLmsRoute
   ApiWebhookRoute: typeof ApiWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sop': {
       id: '/sop'
       path: '/sop'
@@ -175,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/api/webhook'
       fullPath: '/api/webhook'
       preLoaderRoute: typeof ApiWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload-lms': {
+      id: '/api/upload-lms'
+      path: '/api/upload-lms'
+      fullPath: '/api/upload-lms'
+      preLoaderRoute: typeof ApiUploadLmsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/submit': {
@@ -227,10 +267,22 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   SopRoute: SopRoute,
+  TermsRoute: TermsRoute,
   ApiFetchUpiRoute: ApiFetchUpiRoute,
   ApiSubmitRoute: ApiSubmitRoute,
+  ApiUploadLmsRoute: ApiUploadLmsRoute,
   ApiWebhookRoute: ApiWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

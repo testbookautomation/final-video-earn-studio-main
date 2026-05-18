@@ -84,14 +84,14 @@ function DashboardPage() {
   return (
     <section className="mx-auto max-w-6xl px-4 sm:px-6 py-10 md:py-14 space-y-6">
       <div className="fade-up">
-        <span className="badge"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
+        <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
         <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
-        <p className="mt-2 text-muted-foreground">Live status, view milestones and payout — all here.</p>
+        <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>
       </div>
 
       {/* Status banner */}
       <div className={`card p-5 flex flex-wrap items-center gap-4 ${isRejected ? "!border-red-200 bg-red-50/40" : ""}`}>
-        <div className={`size-12 rounded-xl flex items-center justify-center ${
+        <div className={`size-12 rounded-xl flex items-center justify-center shrink-0 ${
           isRejected ? "bg-red-100 text-red-700" :
           submission.status === "paid" ? "bg-emerald-100 text-emerald-700" :
           "tb-gradient text-white"
@@ -101,31 +101,33 @@ function DashboardPage() {
            <Clock className="size-6" />}
         </div>
         <div className="flex-1 min-w-[200px]">
-          <div className="text-xs text-muted-foreground">Current status</div>
-          <div className="text-lg font-semibold text-tb-navy capitalize">{submission.status.replace(/_/g, " ")}</div>
+          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Current status</div>
+          <div className="text-xl font-bold text-tb-navy capitalize mt-0.5">{submission.status.replace(/_/g, " ")}</div>
         </div>
-        <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="btn-ghost">View post ↗</a>
+        {submission.videoUrl && (
+          <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="btn-ghost text-sm">View post ↗</a>
+        )}
       </div>
 
       {/* Timeline */}
       {!isRejected && (
         <div className="card p-6">
-          <div className="text-sm font-semibold text-tb-navy mb-4">Submission timeline</div>
+          <div className="text-base font-bold text-tb-navy mb-4">Submission timeline</div>
           <ol className="grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {timeline.map((t, i) => {
               const reached = i <= stage;
               const current = i === stage;
               return (
-                <li key={t.key} className={`relative rounded-xl p-3 border transition ${
-                  reached ? "border-tb-blue/40 bg-blue-50/40" : "border-border bg-white"
-                } ${current ? "ring-2 ring-tb-blue/30" : ""}`}>
-                  <div className={`size-7 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                <li key={t.key} className={`relative rounded-xl p-4 border transition ${
+                  reached ? "border-tb-blue/40 bg-blue-50/50" : "border-border bg-white"
+                } ${current ? "ring-2 ring-tb-blue/40 shadow-sm" : ""}`}>
+                  <div className={`size-8 rounded-full flex items-center justify-center text-xs font-bold ${
                     reached ? "tb-gradient text-white" : "bg-secondary text-muted-foreground"
                   }`}>
                     {reached ? <CheckCircle2 className="size-4" /> : i + 1}
                   </div>
-                  <div className={`mt-2 text-sm font-semibold ${reached ? "text-tb-navy" : "text-muted-foreground"}`}>{t.label}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{t.desc}</div>
+                  <div className={`mt-2.5 text-sm font-bold ${reached ? "text-tb-navy" : "text-muted-foreground"}`}>{t.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-snug">{t.desc}</div>
                 </li>
               );
             })}
@@ -138,22 +140,23 @@ function DashboardPage() {
         <div className="card p-6 lg:col-span-2">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-sm text-muted-foreground">Views</div>
-              <div className="text-3xl font-bold text-tb-navy">{submission.views.toLocaleString("en-IN")}</div>
+              <div className="text-sm text-muted-foreground font-medium">Total views</div>
+              <div className="text-4xl font-black text-tb-navy mt-0.5">{submission.views.toLocaleString("en-IN")}</div>
             </div>
             {nextMilestone ? (
               <div className="text-right">
-                <div className="text-xs text-muted-foreground">Next milestone</div>
-                <div className="text-sm font-semibold text-tb-blue">{nextMilestone.label} → ₹{nextMilestone.pay.toLocaleString("en-IN")}</div>
+                <div className="text-xs text-muted-foreground font-medium">Next payout at</div>
+                <div className="text-sm font-bold text-tb-blue mt-0.5">{nextMilestone.label} views</div>
+                <div className="text-base font-black text-tb-orange">₹{nextMilestone.pay.toLocaleString("en-IN")}</div>
               </div>
             ) : (
-              <div className="badge badge-green">Max tier reached</div>
+              <div className="badge badge-green text-sm px-3 py-1.5">Max tier reached 🎉</div>
             )}
           </div>
-          <div className="mt-4 h-2.5 rounded-full bg-secondary overflow-hidden">
-            <div className="h-full tb-gradient relative shimmer" style={{ width: `${progressPct}%` }} />
+          <div className="mt-5 h-3 rounded-full bg-secondary overflow-hidden">
+            <div className="h-full tb-gradient relative shimmer rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
           </div>
-          <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
             <span>{(lastMilestone?.label ?? "0")} views</span>
             <span>{nextMilestone ? `${nextMilestone.label} views` : "10L+"}</span>
           </div>
@@ -186,27 +189,27 @@ function DashboardPage() {
 
       {/* Quick actions */}
       <div className="card p-6">
-        <div className="text-sm font-semibold text-tb-navy mb-4">Quick actions</div>
+        <div className="text-base font-bold text-tb-navy mb-4">Quick actions</div>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link to="/submit" className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-tb-blue transition">
-            <div className="size-9 rounded-lg bg-blue-50 text-tb-blue flex items-center justify-center"><Send className="size-4" /></div>
+          <Link to="/submit" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
+            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><Send className="size-5" /></div>
             <div>
-              <div className="text-sm font-semibold text-tb-navy">Submit another</div>
-              <div className="text-xs text-muted-foreground">More videos = more payouts</div>
+              <div className="text-sm font-bold text-tb-navy">Submit another video</div>
+              <div className="text-sm text-muted-foreground mt-0.5">More videos = more payouts</div>
             </div>
           </Link>
-          <Link to="/sop" className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-tb-blue transition">
-            <div className="size-9 rounded-lg bg-blue-50 text-tb-blue flex items-center justify-center"><FileText className="size-4" /></div>
+          <Link to="/sop" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
+            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><FileText className="size-5" /></div>
             <div>
-              <div className="text-sm font-semibold text-tb-navy">Re-read SOP</div>
-              <div className="text-xs text-muted-foreground">Boost approval rate</div>
+              <div className="text-sm font-bold text-tb-navy">Re-read Creator SOP</div>
+              <div className="text-sm text-muted-foreground mt-0.5">Boost your approval rate</div>
             </div>
           </Link>
-          <a href="mailto:creators@testbook.com" className="flex items-start gap-3 p-4 rounded-xl border border-border hover:border-tb-blue transition">
-            <div className="size-9 rounded-lg bg-blue-50 text-tb-blue flex items-center justify-center"><ArrowRight className="size-4" /></div>
+          <a href="mailto:creators@testbook.com" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
+            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><ArrowRight className="size-5" /></div>
             <div>
-              <div className="text-sm font-semibold text-tb-navy">Contact support</div>
-              <div className="text-xs text-muted-foreground">creators@testbook.com</div>
+              <div className="text-sm font-bold text-tb-navy">Contact support</div>
+              <div className="text-sm text-muted-foreground mt-0.5">creators@testbook.com</div>
             </div>
           </a>
         </div>
@@ -230,9 +233,9 @@ function DashboardPage() {
 
 function Stat({ Icon, label, value }: { Icon: typeof Eye; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Icon className="size-3.5" /> {label}</div>
-      <div className="text-lg font-bold text-tb-navy">{value}</div>
+    <div className="rounded-xl border border-border p-3.5 hover:border-tb-blue/40 transition-colors">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold mb-1"><Icon className="size-3.5" /> {label}</div>
+      <div className="text-xl font-black text-tb-navy">{value}</div>
     </div>
   );
 }
@@ -240,12 +243,29 @@ function Stat({ Icon, label, value }: { Icon: typeof Eye; label: string; value: 
 function EmptyState({ phone }: { phone: string }) {
   return (
     <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 text-center fade-up">
-      <div className="size-14 rounded-2xl tb-gradient mx-auto flex items-center justify-center text-white">
-        <Send className="size-6" />
+      <img
+        src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+        alt="Testbook"
+        className="h-10 w-auto mx-auto"
+      />
+      <h1 className="mt-6 text-3xl font-bold text-tb-navy">Welcome, +91 {phone}!</h1>
+      <p className="mt-3 text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
+        You haven't submitted a video yet. Record your first reel — payouts start at <strong className="text-tb-navy">10,000 views (₹500)</strong>.
+      </p>
+      <div className="mt-10 grid sm:grid-cols-3 gap-4 text-left max-w-xl mx-auto">
+        {[
+          { n: "1", t: "Record a reel", d: "30–60 second vertical video on your exam prep journey" },
+          { n: "2", t: "Upload your video", d: "Upload the video file and add your caption" },
+          { n: "3", t: "Get paid via UPI", d: "Every view milestone you cross triggers a UPI transfer" },
+        ].map(({ n, t, d }) => (
+          <div key={n} className="card p-5">
+            <div className="size-8 rounded-full tb-gradient text-white text-sm font-bold flex items-center justify-center">{n}</div>
+            <div className="mt-3 text-sm font-bold text-tb-navy">{t}</div>
+            <div className="text-sm text-muted-foreground mt-1 leading-relaxed">{d}</div>
+          </div>
+        ))}
       </div>
-      <h1 className="mt-4 text-3xl font-bold text-tb-navy">Welcome, +91 {phone}</h1>
-      <p className="mt-2 text-muted-foreground">You haven't submitted a video yet. Drop your first reel — payouts unlock at 10K views.</p>
-      <Link to="/submit" className="btn-orange mt-6 inline-flex">Submit your first video <ArrowRight className="size-4" /></Link>
+      <Link to="/submit" className="btn-orange mt-8 inline-flex text-base px-8 py-3.5">Submit your first video <ArrowRight className="size-4" /></Link>
     </section>
   );
 }
