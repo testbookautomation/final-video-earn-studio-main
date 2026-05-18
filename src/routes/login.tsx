@@ -4,7 +4,7 @@ import {
   Phone, ShieldCheck, ArrowRight, RefreshCw,
   Users, IndianRupee, Trophy, CheckCircle2,
 } from "lucide-react";
-import { getUrlUserParams, getUser, setUser, updateUserSession } from "@/lib/auth";
+import { getOrCreateUserSession, getUrlUserParams, getUser, setUser, updateUserSession } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/login")({
@@ -54,7 +54,15 @@ function LoginPage() {
     }
 
     const urlUser = getUrlUserParams(window.location.search);
-    if (!urlUser.hasIdentity) return;
+    if (!urlUser.hasIdentity) {
+      const session = getOrCreateUserSession();
+      if (session?.phone) {
+        setPhone(session.phone);
+        setUrlPhone(session.phone);
+        setUrlUserId(session.userId || session.phone);
+      }
+      return;
+    }
 
     const userId = urlUser.userId || urlUser.phone;
     updateUserSession({ phone: urlUser.phone, userId });
@@ -85,12 +93,18 @@ function LoginPage() {
 
   const validPhone = /^[6-9]\d{9}$/.test(phone);
   const otpFilled = otp.every((d) => d !== "");
+  const resolvedUserId = () => {
+    if (urlUserId && (!urlPhone || phone === urlPhone)) return urlUserId;
+    return phone;
+  };
 
   const sendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!validPhone) { setError("Enter a valid 10-digit Indian mobile number."); return; }
-    track("UGC_creators_auth_otp_requested", { page: "/login", payload: { phone } });
+    const userId = resolvedUserId();
+    updateUserSession({ phone, userId });
+    track("UGC_creators_auth_otp_requested", { page: "/login", payload: { phone, userId } });
     setOtp(["", "", "", ""]);
     setStep("otp");
     startResendTimer();
@@ -134,7 +148,7 @@ function LoginPage() {
       setError("Enter all 4 digits.");
       return;
     }
-    const userId = phone === urlPhone ? urlUserId || phone : phone;
+    const userId = resolvedUserId();
     setUser({ phone, userId, loggedInAt: Date.now() });
     track("UGC_creators_auth_login_completed", { page: "/login", payload: { phone, userId } });
     navigate({ to: "/dashboard" });

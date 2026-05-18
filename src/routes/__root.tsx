@@ -4,7 +4,6 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
-  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -12,8 +11,7 @@ import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { SiteLayout } from "@/components/layout/SiteLayout";
-import { getOrCreateUserSession, getUrlUserParams, setUser, getUser, isBrowser, updateUserSession } from "@/lib/auth";
-import { track } from "@/lib/analytics";
+import { getOrCreateUserSession, getUrlUserParams, isBrowser, updateUserSession } from "@/lib/auth";
 
 function NotFoundComponent() {
   return (
@@ -96,11 +94,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isBrowser()) return;
     getOrCreateUserSession();
+
+    if (window.location.pathname === "/login") return;
 
     const urlUser = getUrlUserParams(window.location.search);
     if (!urlUser.hasIdentity) return;
@@ -108,23 +107,9 @@ function RootComponent() {
     const userId = urlUser.userId || urlUser.phone;
     updateUserSession({ phone: urlUser.phone, userId });
 
-    if (window.location.pathname === "/login") return;
-
-    if (urlUser.phone.length === 10) {
-      if (!getUser()) {
-        setUser({ phone: urlUser.phone, userId, loggedInAt: Date.now() });
-        track("UGC_creators_auth_login_completed", {
-          page: window.location.pathname,
-          payload: { source: "url_params", userId, phone: urlUser.phone },
-        });
-      }
-
-      const clean = window.location.pathname + window.location.hash;
-      window.history.replaceState({}, "", clean);
-
-      navigate({ to: "/dashboard" });
-    }
-  }, [navigate]);
+    const clean = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, "", clean);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight, CheckCircle2, Clock, Eye, Heart, MessageCircle, IndianRupee,
   Wallet, Send, FileText, Sparkles, AlertCircle, PartyPopper,
-  ShieldCheck, XCircle, ExternalLink,
+  ShieldCheck, XCircle, ExternalLink, RefreshCw,
 } from "lucide-react";
 import { getSubmission, getSubmissions, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
 import { track } from "@/lib/analytics";
@@ -117,6 +117,7 @@ function DashboardPage() {
   const [phone, setPhone] = useState("");
   const [userId, setUserId] = useState("");
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     const u = getUser();
@@ -136,69 +137,74 @@ function DashboardPage() {
 
   // Poll Apps Script for real status — on mount, every 30s, and on tab focus
   useEffect(() => {
-    if (!phone) return;
+    if (!phone || !userId) return;
 
     const TERMINAL: SubmissionStatus[] = ["paid", "rejected"];
     const POLL_MS = 30_000;
 
     const doSync = (isFirstLoad = false) => {
-      const current = getSubmission();
-      // Stop polling once in a terminal state
-      if (current && TERMINAL.includes(current.status)) return;
-
+      const cur = getSubmission();
+      if (cur && TERMINAL.includes(cur.status)) return;
       if (isFirstLoad) setSyncing(true);
 
       fetch(`/api/sync-status?phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
         .then((data: SyncResult) => {
-          if (!data.ok || !data.found) return;
-          const cur = getSubmission();
-          if (!cur) return;
+          if (!data.ok) {
+            setSyncError("Sync failed — will retry");
+            return;
+          }
+          setSyncError(null);
+          if (!data.found) return;
+          const current = getSubmission();
+          if (!current) return;
           const updated: TBSubmission = {
-            ...cur,
-            status:            data.status ?? cur.status,
-            rejectionReason:   data.rejectionReason ?? cur.rejectionReason,
-            payoutEligibility: data.payoutEligibility ?? cur.payoutEligibility,
-            payoutStatus:      data.payoutStatus ?? cur.payoutStatus,
-            views:             data.views    ?? cur.views,
-            likes:             data.likes    ?? cur.likes,
-            comments:          data.comments ?? cur.comments,
-            payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : cur.payoutInr,
-            upi:               data.upi && data.upi.length > 2 ? data.upi : cur.upi,
+            ...current,
+            status:            data.status ?? current.status,
+            rejectionReason:   data.rejectionReason ?? current.rejectionReason,
+            payoutEligibility: data.payoutEligibility ?? current.payoutEligibility,
+            payoutStatus:      data.payoutStatus ?? current.payoutStatus,
+            views:             data.views    ?? current.views,
+            likes:             data.likes    ?? current.likes,
+            comments:          data.comments ?? current.comments,
+            payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : current.payoutInr,
+            upi:               data.upi && data.upi.length > 2 ? data.upi : current.upi,
           };
-          if (JSON.stringify(updated) !== JSON.stringify(cur)) {
+          if (JSON.stringify(updated) !== JSON.stringify(current)) {
             const payload = {
-              submissionId: cur.id,
-              previousStatus: cur.status,
+              submissionId: current.id,
+              previousStatus: current.status,
               status: updated.status,
-              previousPayoutEligibility: cur.payoutEligibility ?? "",
+              previousPayoutEligibility: current.payoutEligibility ?? "",
               payoutEligibility: updated.payoutEligibility ?? "",
-              previousPayoutStatus: cur.payoutStatus ?? "",
+              previousPayoutStatus: current.payoutStatus ?? "",
               payoutStatus: updated.payoutStatus ?? "",
               payoutInr: updated.payoutInr,
               views: updated.views,
               rejectionReason: updated.rejectionReason ?? "",
             };
-            const statusEvent = cur.status !== updated.status ? statusEventName(updated.status) : null;
+            const statusEvent = current.status !== updated.status ? statusEventName(updated.status) : null;
             const firedEvents = new Set<string>();
             if (statusEvent) { track(statusEvent, { page: "/dashboard", payload }); firedEvents.add(statusEvent); }
-            if (!isEligible(cur.payoutEligibility) && isEligible(updated.payoutEligibility)) {
+            if (!isEligible(current.payoutEligibility) && isEligible(updated.payoutEligibility)) {
               track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
             }
-            const payoutEvent = cur.payoutStatus !== updated.payoutStatus ? paymentStatusEventName(updated.payoutStatus) : null;
+            const payoutEvent = current.payoutStatus !== updated.payoutStatus ? paymentStatusEventName(updated.payoutStatus) : null;
             if (payoutEvent && !firedEvents.has(payoutEvent)) track(payoutEvent, { page: "/dashboard", payload });
             saveSubmission(updated);
             setSubmission(updated);
             setSubmissions(getSubmissions());
           }
         })
-        .catch(() => {})
+        .catch(() => setSyncError("Network error — will retry"))
         .finally(() => { if (isFirstLoad) setSyncing(false); });
     };
 
     doSync(true);
     const timer = setInterval(() => doSync(false), POLL_MS);
-
     const onVisible = () => { if (document.visibilityState === "visible") doSync(false); };
     document.addEventListener("visibilitychange", onVisible);
 
@@ -206,7 +212,7 @@ function DashboardPage() {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [phone]);
+  }, [phone, userId]);
 
   if (!submission) {
     return <EmptyState phone={phone} />;
@@ -226,7 +232,12 @@ function DashboardPage() {
       <div className="fade-up">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
-          {syncing && <span className="text-xs text-muted-foreground animate-pulse">Syncing status…</span>}
+          {syncing && <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1"><RefreshCw className="size-3 animate-spin" /> Syncing…</span>}
+          {syncError && !syncing && (
+            <span className="text-xs text-amber-600 flex items-center gap-1">
+              <AlertCircle className="size-3" /> {syncError}
+            </span>
+          )}
         </div>
         <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
         <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>

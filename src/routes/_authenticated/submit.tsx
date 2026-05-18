@@ -177,6 +177,7 @@ function SubmitPage() {
       fd.append("file",          videoFile!);
       fd.append("submissionId",  submissionId);
       fd.append("creatorPhone",  phone);
+      fd.append("creatorUserId", userId);
       fd.append("sessionId",     sessionId);
       fd.append("platform",      form.platform);
 

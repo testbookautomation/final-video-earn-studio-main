@@ -34,7 +34,7 @@ export const Route = createFileRoute("/api/submit")({
 
           const submissionId = String(body.id       ?? "");
           const creatorPhone = String(body.phone    ?? "").replace(/\D/g, "").slice(-10);
-          const creatorId    = String(body.userId   ?? creatorPhone); // real Testbook ObjectId or phone fallback
+          const creatorId    = String(body.userId   ?? "").trim() || creatorPhone; // real Testbook ObjectId or phone fallback
           const sessionId    = String(body.sessionId ?? "");
           const meta         = { creatorPhone, userId: creatorId, sessionId, submissionId };
 

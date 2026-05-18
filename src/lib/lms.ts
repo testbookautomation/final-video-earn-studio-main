@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzXMa5OLaO-C5XCcDfmIEjtImi_UwdHGK9hK2sMrj4nacDKmr9l3lHMJtc0oQbA7mEi7Q/exec";
+  "https://script.google.com/macros/s/AKfycbz83iEe8-jeoCmXELtRnSZBwyVlT5xNEZbuPDTJO1eWuYaZ7Eq6Q89sCA6c6txGE2KLyA/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -304,7 +304,7 @@ export async function lmsUploadToPresignedUrl(
   uploadUrl: string,
   file: Blob,
   cleanFilename: string,
-  mimeType: string,
+  _mimeType: string,
 ): Promise<{ statusCode: number; responseText: string }> {
   const formData = new FormData();
   formData.append("file", file, cleanFilename);

@@ -34,7 +34,7 @@ export function track(eventName: string, opts: TrackOptions = {}): void {
   const body = {
     eventName,
     sessionId: user?.sessionId ?? session?.id ?? "",
-    userId:   user?.userId ?? user?.phone ?? session?.userId ?? "",
+    userId:   user?.userId ?? user?.phone ?? session?.userId ?? session?.phone ?? "",
     phone:    user?.phone ?? session?.phone ?? "",
     page:     opts.page     ?? window.location.pathname,
     platform: opts.platform ?? "",

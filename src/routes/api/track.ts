@@ -54,6 +54,9 @@ export const Route = createFileRoute("/api/track")({
             return json({ ok: true, skipped: true });
           }
 
+          const phone = String(body.phone ?? "").replace(/\D/g, "").slice(-10);
+          const userId = String(body.userId ?? phone).trim() || phone;
+
           // Forward to Apps Script in the format it expects
           fetch(APPS_SCRIPT_URL, {
             method:   "POST",
@@ -63,8 +66,8 @@ export const Route = createFileRoute("/api/track")({
               token:     APPS_SCRIPT_TOKEN,
               eventName,
               sessionId: String(body.sessionId ?? ""),
-              userId:    String(body.userId    ?? ""),
-              phone:     String(body.phone     ?? ""),
+              userId,
+              phone,
               page:      String(body.page      ?? ""),
               platform:  String(body.platform  ?? ""),
               payload:   body.payload ?? {},

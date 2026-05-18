@@ -5,6 +5,7 @@
  *   file          — video File blob
  *   submissionId  — client-generated submission ID (for event correlation)
  *   creatorPhone  — creator's phone number
+ *   creatorUserId — creator's Testbook user ID
  *   sessionId     — browser session ID
  *   platform      — instagram | youtube | facebook
  *
@@ -48,6 +49,7 @@ export const Route = createFileRoute("/api/upload-lms")({
       POST: async ({ request }) => {
         let submissionId = "";
         let creatorPhone = "";
+        let creatorUserId = "";
         let sessionId = "";
         let originalFilename = "";
 
@@ -55,7 +57,8 @@ export const Route = createFileRoute("/api/upload-lms")({
           const formData    = await request.formData();
           const file        = formData.get("file") as File | null;
           submissionId      = String(formData.get("submissionId") ?? "");
-          creatorPhone      = String(formData.get("creatorPhone")  ?? "");
+          creatorPhone      = String(formData.get("creatorPhone")  ?? "").replace(/\D/g, "").slice(-10);
+          creatorUserId     = String(formData.get("creatorUserId") ?? creatorPhone);
           sessionId         = String(formData.get("sessionId")     ?? "");
           const platform    = String(formData.get("platform")      ?? "");
 
@@ -83,7 +86,7 @@ export const Route = createFileRoute("/api/upload-lms")({
           const fileExt          = getFileExt(cleanFilename);
           const prefix           = `${Date.now()}-${cleanFilename}`;
           const fileSizeBytes    = file.size;
-          const meta             = { creatorPhone, sessionId, submissionId };
+          const meta             = { creatorPhone, userId: creatorUserId, sessionId, submissionId };
 
           let token: string;
           try {
@@ -170,7 +173,7 @@ export const Route = createFileRoute("/api/upload-lms")({
             reason: "unexpected_error",
             error:    String(err),
             filename: originalFilename,
-          }, { creatorPhone, sessionId, submissionId });
+          }, { creatorPhone, userId: creatorUserId, sessionId, submissionId });
 
           return json({ ok: false, error: String(err) }, 500);
         }

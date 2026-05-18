@@ -121,8 +121,17 @@ export function updateUserSession(user?: Pick<TBUser, "phone" | "userId"> | null
     delete next.phone;
     delete next.userId;
   } else if (user) {
-    if (user.phone) next.phone = normalizePhone(user.phone);
-    if (user.userId) next.userId = user.userId;
+    if ("phone" in user) {
+      const phone = normalizePhone(user.phone ?? "");
+      if (phone.length === 10) next.phone = phone;
+      else delete next.phone;
+    }
+    if ("userId" in user) {
+      const userId = (user.userId ?? "").trim();
+      if (userId) next.userId = userId;
+      else if (!next.phone) delete next.userId;
+    }
+    if (!next.userId && next.phone) next.userId = next.phone;
   }
 
   return persistUserSession(next);

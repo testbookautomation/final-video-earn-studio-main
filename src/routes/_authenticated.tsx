@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getUser } from "@/lib/auth";
+import { getUrlUserParams, getUser, updateUserSession } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated")({
   // SSR-safe redirect handled by client guard below; getUser is browser-only.
@@ -12,8 +12,12 @@ function AuthGate() {
   useEffect(() => {
     const u = getUser();
     if (!u) {
+      const urlUser = getUrlUserParams(window.location.search);
+      if (urlUser.hasIdentity) {
+        updateUserSession({ phone: urlUser.phone, userId: urlUser.userId || urlUser.phone });
+      }
       // Manual redirect (no router context required for this simple LS auth)
-      window.location.href = `/login`;
+      window.location.href = `/login${window.location.search}`;
     } else {
       setOk(true);
     }
