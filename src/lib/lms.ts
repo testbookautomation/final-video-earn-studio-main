@@ -136,12 +136,12 @@ export async function lmsGetPresignedUrl(
 
 export async function lmsUploadToPresignedUrl(
   uploadUrl: string,
-  fileBuffer: ArrayBuffer,
+  file: Blob,
   cleanFilename: string,
   mimeType: string,
 ): Promise<{ statusCode: number; responseText: string }> {
   const formData = new FormData();
-  formData.append("file", new Blob([fileBuffer], { type: mimeType }), cleanFilename);
+  formData.append("file", file, cleanFilename);
 
   const resp = await fetch(uploadUrl, {
     method: "POST",

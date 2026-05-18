@@ -7,6 +7,12 @@ import {
   CloudUpload, Send, RefreshCw,
 } from "lucide-react";
 import { getUser, saveSubmission, type TBSubmission } from "@/lib/auth";
+import {
+  ACCEPTED_VIDEO_EXTENSIONS,
+  MAX_VIDEO_UPLOAD_BYTES,
+  MAX_VIDEO_UPLOAD_LABEL,
+  isAcceptedVideoFile,
+} from "@/lib/upload-limits";
 
 export const Route = createFileRoute("/_authenticated/submit")({
   head: () => ({
@@ -50,6 +56,7 @@ const STAGE_LABELS: Record<SubmitStage, string> = {
 };
 
 function fmt(n: number) {
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + " GB";
   if (n >= 1e6) return (n / 1e6).toFixed(1) + " MB";
   return (n / 1024).toFixed(0) + " KB";
 }
@@ -97,7 +104,15 @@ function SubmitPage() {
   }, [videoPreview]);
 
   const pickFile = (file: File) => {
-    if (!file.type.startsWith("video/")) return;
+    if (!isAcceptedVideoFile(file)) {
+      setErrorMsg(`Please choose a video file in ${ACCEPTED_VIDEO_EXTENSIONS} format.`);
+      return;
+    }
+    if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
+      setErrorMsg(`Video is too large. Maximum upload size is ${MAX_VIDEO_UPLOAD_LABEL}.`);
+      return;
+    }
+    setErrorMsg("");
     setVideoFile(file);
     setCdnUrl(null); // reset CDN URL if a new file is picked
     if (videoPreview) URL.revokeObjectURL(videoPreview);
@@ -404,7 +419,8 @@ function SubmitPage() {
               <CloudUpload className="size-5 mt-0.5 shrink-0 text-tb-blue" />
               <p className="text-sm text-blue-800 leading-relaxed">
                 Your video will be uploaded directly to the <strong>LMS CDN</strong>.
-                Accepted: <strong>MP4, MOV, AVI</strong> · Max <strong>500 MB</strong>
+                Accepted: <strong>{ACCEPTED_VIDEO_EXTENSIONS}</strong> · Max{" "}
+                <strong>{MAX_VIDEO_UPLOAD_LABEL}</strong>
               </p>
             </div>
 
@@ -467,7 +483,9 @@ function SubmitPage() {
                 <div className="mt-4 text-base font-bold text-tb-navy">
                   {dragOver ? "Drop your video here" : "Drag & drop your video file here"}
                 </div>
-                <div className="mt-2 text-sm text-muted-foreground">MP4, MOV, AVI · Maximum 500 MB</div>
+                <div className="mt-2 text-sm text-muted-foreground">
+                  {ACCEPTED_VIDEO_EXTENSIONS} · Maximum {MAX_VIDEO_UPLOAD_LABEL}
+                </div>
                 <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-tb-blue border-2 border-tb-blue/30 rounded-xl px-5 py-2.5 hover:bg-blue-50 hover:border-tb-blue/60 transition-all">
                   <Upload className="size-4" /> Choose video file
                 </div>

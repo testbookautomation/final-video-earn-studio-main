@@ -22,6 +22,12 @@ import {
   lmsLogin, lmsGetPresignedUrl, lmsUploadToPresignedUrl,
   cleanFileName, getFileExt,
 } from "@/lib/lms";
+import {
+  ACCEPTED_VIDEO_EXTENSIONS,
+  MAX_VIDEO_UPLOAD_BYTES,
+  MAX_VIDEO_UPLOAD_LABEL,
+  isAcceptedVideoFile,
+} from "@/lib/upload-limits";
 
 const cors = {
   "Access-Control-Allow-Origin":  "*",
@@ -54,6 +60,20 @@ export const Route = createFileRoute("/api/upload-lms")({
 
           if (!file || file.size === 0) {
             return json({ ok: false, error: "No video file received." }, 400);
+          }
+
+          if (!isAcceptedVideoFile(file)) {
+            return json({
+              ok: false,
+              error: `Please upload a video in ${ACCEPTED_VIDEO_EXTENSIONS} format.`,
+            }, 400);
+          }
+
+          if (file.size > MAX_VIDEO_UPLOAD_BYTES) {
+            return json({
+              ok: false,
+              error: `Video is too large. Maximum upload size is ${MAX_VIDEO_UPLOAD_LABEL}.`,
+            }, 413);
           }
 
           originalFilename       = file.name;
@@ -116,13 +136,12 @@ export const Route = createFileRoute("/api/upload-lms")({
             uploadEndpoint: uploadUrl.split("?")[0],
           }, meta);
 
-          const fileBuffer = await file.arrayBuffer();
           let statusCode: number;
           let responseText: string;
 
           try {
             ({ statusCode, responseText } = await lmsUploadToPresignedUrl(
-              uploadUrl, fileBuffer, cleanFilename, mimeType,
+              uploadUrl, file, cleanFilename, mimeType,
             ));
           } catch (err) {
             await fireEvent(EVENT.VIDEO_UPLOAD_CDN_TRANSFER_FAILED, {
