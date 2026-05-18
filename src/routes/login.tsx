@@ -1,17 +1,33 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Phone, ShieldCheck, ArrowRight, RefreshCw,
-  Users, IndianRupee, Trophy, CheckCircle2,
+  Phone,
+  ShieldCheck,
+  ArrowRight,
+  RefreshCw,
+  Users,
+  IndianRupee,
+  Trophy,
+  CheckCircle2,
 } from "lucide-react";
-import { getOrCreateUserSession, getUrlUserParams, getUser, setUser, updateUserSession } from "@/lib/auth";
+import {
+  getOrCreateUserSession,
+  getUrlUserParams,
+  getUser,
+  setUser,
+  updateUserSession,
+} from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Login — Testbook Creator Lab" },
-      { name: "description", content: "Login with your phone number and OTP to start submitting videos and tracking payouts." },
+      {
+        name: "description",
+        content:
+          "Login with your phone number and OTP to start submitting videos and tracking payouts.",
+      },
       { property: "og:title", content: "Login — Testbook Creator Lab" },
       { property: "og:url", content: "/login" },
     ],
@@ -21,6 +37,16 @@ export const Route = createFileRoute("/login")({
 });
 
 const RESEND_SECONDS = 30;
+const OTP_LENGTH = 6;
+const emptyOtp = () => Array.from({ length: OTP_LENGTH }, () => "");
+
+type AuthApiResponse = {
+  ok?: boolean;
+  error?: string;
+  message?: string;
+  userId?: string;
+  studentId?: string;
+};
 
 const perks = [
   "Record a 30–60s reel on your exam journey",
@@ -29,9 +55,9 @@ const perks = [
 ];
 
 const stats = [
-  { Icon: Users,        k: "12K+",   v: "Creators" },
-  { Icon: IndianRupee,  k: "₹4.2Cr", v: "Paid out" },
-  { Icon: Trophy,       k: "85%",    v: "Approval" },
+  { Icon: Users, k: "12K+", v: "Creators" },
+  { Icon: IndianRupee, k: "₹4.2Cr", v: "Paid out" },
+  { Icon: Trophy, k: "85%", v: "Approval" },
 ];
 
 function LoginPage() {
@@ -40,8 +66,8 @@ function LoginPage() {
   const [phone, setPhone] = useState("");
   const [urlPhone, setUrlPhone] = useState("");
   const [urlUserId, setUrlUserId] = useState("");
-  const [otp, setOtp] = useState(["", "", "", ""]);
-  const [loading, setLoading] = useState(false);
+  const [otp, setOtp] = useState(emptyOtp);
+  const [loading, setLoading] = useState<"send" | "verify" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resend, setResend] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
@@ -79,14 +105,20 @@ function LoginPage() {
   }, [navigate]);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
   const startResendTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setResend(RESEND_SECONDS);
     timerRef.current = setInterval(() => {
       setResend((s) => {
-        if (s <= 1) { clearInterval(timerRef.current!); return 0; }
+        if (s <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
         return s - 1;
       });
     }, 1000);
@@ -94,21 +126,67 @@ function LoginPage() {
 
   const validPhone = /^[6-9]\d{9}$/.test(phone);
   const otpFilled = otp.every((d) => d !== "");
+  const busy = loading !== null;
   const resolvedUserId = () => {
     if (urlUserId && (!urlPhone || phone === urlPhone)) return urlUserId;
     return phone;
   };
 
+  const readAuthResponse = async (res: Response): Promise<AuthApiResponse> => {
+    let data: AuthApiResponse = {};
+    try {
+      data = (await res.json()) as AuthApiResponse;
+    } catch {
+      /* ignore */
+    }
+    if (!res.ok || !data.ok) {
+      throw new Error(
+        data.error ||
+          data.message ||
+          "Unable to complete OTP request. Please try again.",
+      );
+    }
+    return data;
+  };
+
+  const requestOtp = async (isResend = false) => {
+    setError(null);
+    if (!validPhone) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    const userId = resolvedUserId();
+    setLoading("send");
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, resend: isResend }),
+      });
+      await readAuthResponse(res);
+      updateUserSession({ phone, userId });
+      track("UGC_creators_auth_otp_requested", {
+        page: "/login",
+        payload: { phone, userId },
+      });
+      setOtp(emptyOtp());
+      setStep("otp");
+      startResendTimer();
+      window.setTimeout(() => refs.current[0]?.focus(), 0);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send OTP. Please try again.",
+      );
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const sendOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    if (!validPhone) { setError("Enter a valid 10-digit Indian mobile number."); return; }
-    const userId = resolvedUserId();
-    updateUserSession({ phone, userId });
-    track("UGC_creators_auth_otp_requested", { page: "/login", payload: { phone, userId } });
-    setOtp(["", "", "", ""]);
-    setStep("otp");
-    startResendTimer();
+    void requestOtp(false);
   };
 
   const handleOtp = (i: number, v: string) => {
@@ -117,62 +195,96 @@ function LoginPage() {
     next[i] = v;
     setOtp(next);
     setError(null);
-    if (v && i < 3) refs.current[i + 1]?.focus();
+    if (v && i < OTP_LENGTH - 1) refs.current[i + 1]?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    i: number,
+  ) => {
     if (e.key === "Backspace") {
-      if (otp[i]) { const n = [...otp]; n[i] = ""; setOtp(n); }
-      else if (i > 0) refs.current[i - 1]?.focus();
+      if (otp[i]) {
+        const n = [...otp];
+        n[i] = "";
+        setOtp(n);
+      } else if (i > 0) refs.current[i - 1]?.focus();
     } else if (e.key === "ArrowLeft" && i > 0) refs.current[i - 1]?.focus();
-    else if (e.key === "ArrowRight" && i < 3) refs.current[i + 1]?.focus();
+    else if (e.key === "ArrowRight" && i < OTP_LENGTH - 1)
+      refs.current[i + 1]?.focus();
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const digits = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 4);
+    const digits = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH);
     if (!digits) return;
-    const next = ["", "", "", ""];
-    digits.split("").forEach((d, idx) => { next[idx] = d; });
+    const next = emptyOtp();
+    digits.split("").forEach((d, idx) => {
+      next[idx] = d;
+    });
     setOtp(next);
     setError(null);
-    refs.current[Math.min(digits.length, 3)]?.focus();
+    refs.current[Math.min(digits.length, OTP_LENGTH - 1)]?.focus();
   };
 
-  const doVerify = (code: string) => {
+  const doVerify = async (code: string) => {
     setError(null);
     if (step !== "otp" || !validPhone) {
       setError("Request an OTP before logging in.");
       return;
     }
-    if (code.length !== 4) {
-      setError("Enter all 4 digits.");
+    if (code.length !== OTP_LENGTH) {
+      setError("Enter the 6-digit OTP.");
       return;
     }
-    const userId = resolvedUserId();
-    setUser({ phone, userId, loggedInAt: Date.now() });
-    track("UGC_creators_auth_login_completed", { page: "/login", payload: { phone, userId } });
-    navigate({ to: "/dashboard" });
+    setLoading("verify");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp: code }),
+      });
+      const data = await readAuthResponse(res);
+      const userId = data.userId || data.studentId || resolvedUserId();
+      setUser({ phone, userId, loggedInAt: Date.now() });
+      track("UGC_creators_auth_login_completed", {
+        page: "/login",
+        payload: { phone, userId },
+      });
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Invalid OTP. Please check and try again.",
+      );
+    } finally {
+      setLoading(null);
+    }
   };
 
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpFilled) { setError("Enter all 4 digits."); return; }
-    doVerify(otp.join(""));
+    if (!otpFilled) {
+      setError("Enter the 6-digit OTP.");
+      return;
+    }
+    await doVerify(otp.join(""));
   };
 
   const handleResend = () => {
-    if (resend > 0) return;
-    setError(null);
-    setOtp(["", "", "", ""]);
-    startResendTimer();
+    if (resend > 0 || busy) return;
+    void requestOtp(true);
   };
 
   const goBack = () => {
     setStep("phone");
-    setOtp(["", "", "", ""]);
+    setOtp(emptyOtp());
     setError(null);
     if (timerRef.current) clearInterval(timerRef.current);
+    setResend(0);
   };
 
   return (
@@ -191,23 +303,30 @@ function LoginPage() {
             alt="Testbook"
             className="h-8 w-auto brightness-0 invert"
           />
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/50">Creator Lab</div>
+          <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/50">
+            Creator Lab
+          </div>
         </div>
 
         <div className="relative space-y-8">
           <div>
             <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight">
-              Make a reel.<br />
+              Make a reel.
+              <br />
               <span className="tb-text-gradient">Get paid in UPI.</span>
             </h2>
             <p className="mt-4 text-white/70 text-base max-w-sm leading-relaxed">
-              Join India's largest student creator campaign — earn ₹500 to ₹25,000 per video based on real view milestones.
+              Join India's largest student creator campaign — earn ₹500 to
+              ₹25,000 per video based on real view milestones.
             </p>
           </div>
 
           <ul className="space-y-3">
             {perks.map((p) => (
-              <li key={p} className="flex items-start gap-3 text-sm text-white/85">
+              <li
+                key={p}
+                className="flex items-start gap-3 text-sm text-white/85"
+              >
                 <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />
                 {p}
               </li>
@@ -228,14 +347,21 @@ function LoginPage() {
         <div className="relative">
           <div className="glass rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm">P</div>
+              <div className="size-10 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+                P
+              </div>
               <div>
-                <div className="text-sm font-semibold text-white">Priya S. · SSC CGL</div>
-                <div className="text-xs text-white/60">6.2L views · Earned ₹18,400</div>
+                <div className="text-sm font-semibold text-white">
+                  Priya S. · SSC CGL
+                </div>
+                <div className="text-xs text-white/60">
+                  6.2L views · Earned ₹18,400
+                </div>
               </div>
             </div>
             <p className="mt-3 text-sm text-white/80 italic leading-relaxed">
-              "Submitted my first reel on a Monday — got approved by Wednesday. UPI hit on Friday. Easiest ₹6,000 I've made."
+              "Submitted my first reel on a Monday — got approved by Wednesday.
+              UPI hit on Friday. Easiest ₹6,000 I've made."
             </p>
           </div>
         </div>
@@ -244,7 +370,6 @@ function LoginPage() {
       {/* ── Right form panel ── */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-10 bg-tb-bg">
         <div className="w-full max-w-sm fade-up">
-
           {/* Mobile logo (hidden on desktop) */}
           <div className="lg:hidden text-center mb-8">
             <img
@@ -256,9 +381,19 @@ function LoginPage() {
 
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-6">
-            <StepDot n={1} active={step === "phone"} done={step === "otp"} label="Phone" />
+            <StepDot
+              n={1}
+              active={step === "phone"}
+              done={step === "otp"}
+              label="Phone"
+            />
             <div className="flex-1 h-px bg-border" />
-            <StepDot n={2} active={step === "otp"} done={false} label="Verify" />
+            <StepDot
+              n={2}
+              active={step === "otp"}
+              done={false}
+              label="Verify"
+            />
           </div>
 
           {/* Heading */}
@@ -267,10 +402,15 @@ function LoginPage() {
               {step === "phone" ? "Enter your number" : "Verify your number"}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
-              {step === "phone"
-                ? "We'll send a 4-digit OTP to your mobile number to confirm your identity."
-                : <>OTP sent to <span className="font-bold text-tb-navy">+91 {phone}</span>. Enter it below to continue.</>
-              }
+              {step === "phone" ? (
+                "We'll send a 6-digit OTP to your mobile number to confirm your identity."
+              ) : (
+                <>
+                  OTP sent to{" "}
+                  <span className="font-bold text-tb-navy">+91 {phone}</span>.
+                  Enter it below to continue.
+                </>
+              )}
             </p>
           </div>
 
@@ -279,44 +419,68 @@ function LoginPage() {
             {step === "phone" ? (
               <form onSubmit={sendOtp} className="space-y-4">
                 <div>
-                  <label className="text-sm font-semibold text-tb-navy block mb-1.5">Mobile number</label>
+                  <label className="text-sm font-semibold text-tb-navy block mb-1.5">
+                    Mobile number
+                  </label>
                   <div className="flex items-stretch rounded-xl border border-border bg-white overflow-hidden focus-within:border-tb-blue focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
                     <span className="px-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground border-r border-border bg-secondary/50 shrink-0">
                       <Phone className="size-3.5" /> +91
                     </span>
                     <input
-                      type="tel" inputMode="numeric" autoFocus
-                      maxLength={10} placeholder="98XXXXXXXX"
+                      type="tel"
+                      inputMode="numeric"
+                      autoFocus
+                      maxLength={10}
+                      placeholder="98XXXXXXXX"
                       value={phone}
-                      onChange={(e) => { setPhone(e.target.value.replace(/\D/g, "")); setError(null); }}
+                      onChange={(e) => {
+                        setPhone(e.target.value.replace(/\D/g, ""));
+                        setError(null);
+                      }}
                       className="flex-1 px-3 py-3.5 bg-transparent outline-none text-base font-medium tracking-wide"
                     />
                   </div>
-                  {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+                  {error && (
+                    <p className="mt-2 text-xs text-red-600">{error}</p>
+                  )}
                 </div>
 
-                <button disabled={!validPhone || loading} className="btn-primary w-full text-base py-3.5">
-                  {loading
-                    ? <><span className="spinner" /> Sending…</>
-                    : <>Send OTP <ArrowRight className="size-4" /></>
-                  }
+                <button
+                  disabled={!validPhone || busy}
+                  className="btn-primary w-full text-base py-3.5"
+                >
+                  {loading === "send" ? (
+                    <>
+                      <span className="spinner" /> Sending…
+                    </>
+                  ) : (
+                    <>
+                      Send OTP <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </button>
 
                 <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                  By continuing you agree to our campaign terms &amp; content policy.
+                  By continuing you agree to our campaign terms &amp; content
+                  policy.
                 </p>
               </form>
             ) : (
               <form onSubmit={verify} className="space-y-5">
                 {/* OTP boxes */}
                 <div>
-                  <label className="text-sm font-semibold text-tb-navy block mb-3">Enter 4-digit OTP</label>
-                  <div className="flex gap-3 justify-center">
+                  <label className="text-sm font-semibold text-tb-navy block mb-3">
+                    Enter 6-digit OTP
+                  </label>
+                  <div className="flex gap-1.5 sm:gap-2 justify-center">
                     {otp.map((d, i) => (
                       <input
                         key={i}
-                        ref={(el) => { refs.current[i] = el; }}
-                        inputMode="numeric" maxLength={1}
+                        ref={(el) => {
+                          refs.current[i] = el;
+                        }}
+                        inputMode="numeric"
+                        maxLength={1}
                         value={d}
                         onChange={(e) => handleOtp(i, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, i)}
@@ -325,33 +489,61 @@ function LoginPage() {
                       />
                     ))}
                   </div>
-                  {error && <p className="mt-3 text-xs text-red-600 text-center">{error}</p>}
+                  {error && (
+                    <p className="mt-3 text-xs text-red-600 text-center">
+                      {error}
+                    </p>
+                  )}
                 </div>
 
                 {/* OTP hint */}
                 <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-700">
                   <ShieldCheck className="size-4 mt-0.5 shrink-0 text-tb-blue" />
                   <p className="text-xs leading-relaxed">
-                    Enter the 4-digit OTP sent to your phone to continue.
+                    Enter the 6-digit OTP sent to your phone to continue.
                   </p>
                 </div>
 
-                <button disabled={!otpFilled || loading} className="btn-primary w-full text-base py-3.5">
-                  {loading
-                    ? <><span className="spinner" /> Verifying…</>
-                    : <>Verify &amp; continue <ArrowRight className="size-4" /></>
-                  }
+                <button
+                  disabled={!otpFilled || busy}
+                  className="btn-primary w-full text-base py-3.5"
+                >
+                  {loading === "verify" ? (
+                    <>
+                      <span className="spinner" /> Verifying…
+                    </>
+                  ) : (
+                    <>
+                      Verify &amp; continue <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </button>
 
                 <div className="flex items-center justify-between text-xs">
-                  <button type="button" onClick={goBack} className="text-muted-foreground hover:text-tb-navy transition-colors">
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    className="text-muted-foreground hover:text-tb-navy transition-colors"
+                  >
                     ← Change number
                   </button>
                   {resend > 0 ? (
-                    <span className="text-muted-foreground">Resend in {resend}s</span>
+                    <span className="text-muted-foreground">
+                      Resend in {resend}s
+                    </span>
                   ) : (
-                    <button type="button" onClick={handleResend} className="text-tb-blue font-medium flex items-center gap-1">
-                      <RefreshCw className="size-3" /> Resend OTP
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={handleResend}
+                      className="text-tb-blue font-medium flex items-center gap-1 disabled:opacity-60"
+                    >
+                      {loading === "send" ? (
+                        <span className="spinner" />
+                      ) : (
+                        <RefreshCw className="size-3" />
+                      )}{" "}
+                      Resend OTP
                     </button>
                   )}
                 </div>
@@ -361,7 +553,10 @@ function LoginPage() {
 
           <p className="text-[11px] text-center text-muted-foreground mt-5">
             Need help?{" "}
-            <a className="text-tb-blue font-medium" href="mailto:creators@testbook.com">
+            <a
+              className="text-tb-blue font-medium"
+              href="mailto:creators@testbook.com"
+            >
               creators@testbook.com
             </a>
           </p>
@@ -371,17 +566,35 @@ function LoginPage() {
   );
 }
 
-function StepDot({ n, active, done, label }: { n: number; active: boolean; done: boolean; label: string }) {
+function StepDot({
+  n,
+  active,
+  done,
+  label,
+}: {
+  n: number;
+  active: boolean;
+  done: boolean;
+  label: string;
+}) {
   return (
     <div className="flex items-center gap-1.5">
-      <div className={`size-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-        done ? "tb-gradient text-white" :
-        active ? "border-2 border-tb-blue text-tb-blue bg-white" :
-        "border-2 border-border text-muted-foreground bg-white"
-      }`}>
+      <div
+        className={`size-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+          done
+            ? "tb-gradient text-white"
+            : active
+              ? "border-2 border-tb-blue text-tb-blue bg-white"
+              : "border-2 border-border text-muted-foreground bg-white"
+        }`}
+      >
         {done ? <CheckCircle2 className="size-4" /> : n}
       </div>
-      <span className={`text-xs font-medium ${active ? "text-tb-navy" : "text-muted-foreground"}`}>{label}</span>
+      <span
+        className={`text-xs font-medium ${active ? "text-tb-navy" : "text-muted-foreground"}`}
+      >
+        {label}
+      </span>
     </div>
   );
 }

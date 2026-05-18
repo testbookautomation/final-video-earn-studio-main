@@ -22,6 +22,8 @@ import { Route as ApiSubmitRouteImport } from './routes/api/submit'
 import { Route as ApiFetchUpiRouteImport } from './routes/api/fetch-upi'
 import { Route as AuthenticatedSubmitRouteImport } from './routes/_authenticated/submit'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as ApiAuthVerifyOtpRouteImport } from './routes/api/auth/verify-otp'
+import { Route as ApiAuthSendOtpRouteImport } from './routes/api/auth/send-otp'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -87,6 +89,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiAuthVerifyOtpRoute = ApiAuthVerifyOtpRouteImport.update({
+  id: '/api/auth/verify-otp',
+  path: '/api/auth/verify-otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSendOtpRoute = ApiAuthSendOtpRouteImport.update({
+  id: '/api/auth/send-otp',
+  path: '/api/auth/send-otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +113,8 @@ export interface FileRoutesByFullPath {
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
+  '/api/auth/send-otp': typeof ApiAuthSendOtpRoute
+  '/api/auth/verify-otp': typeof ApiAuthVerifyOtpRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,6 +129,8 @@ export interface FileRoutesByTo {
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
+  '/api/auth/send-otp': typeof ApiAuthSendOtpRoute
+  '/api/auth/verify-otp': typeof ApiAuthVerifyOtpRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,6 +147,8 @@ export interface FileRoutesById {
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
+  '/api/auth/send-otp': typeof ApiAuthSendOtpRoute
+  '/api/auth/verify-otp': typeof ApiAuthVerifyOtpRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,6 +165,8 @@ export interface FileRouteTypes {
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
+    | '/api/auth/send-otp'
+    | '/api/auth/verify-otp'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -161,6 +181,8 @@ export interface FileRouteTypes {
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
+    | '/api/auth/send-otp'
+    | '/api/auth/verify-otp'
   id:
     | '__root__'
     | '/'
@@ -176,6 +198,8 @@ export interface FileRouteTypes {
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
+    | '/api/auth/send-otp'
+    | '/api/auth/verify-otp'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,6 +214,8 @@ export interface RootRouteChildren {
   ApiTrackRoute: typeof ApiTrackRoute
   ApiUploadLmsRoute: typeof ApiUploadLmsRoute
   ApiWebhookRoute: typeof ApiWebhookRoute
+  ApiAuthSendOtpRoute: typeof ApiAuthSendOtpRoute
+  ApiAuthVerifyOtpRoute: typeof ApiAuthVerifyOtpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -285,6 +311,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/auth/verify-otp': {
+      id: '/api/auth/verify-otp'
+      path: '/api/auth/verify-otp'
+      fullPath: '/api/auth/verify-otp'
+      preLoaderRoute: typeof ApiAuthVerifyOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/send-otp': {
+      id: '/api/auth/send-otp'
+      path: '/api/auth/send-otp'
+      fullPath: '/api/auth/send-otp'
+      preLoaderRoute: typeof ApiAuthSendOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -314,6 +354,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTrackRoute: ApiTrackRoute,
   ApiUploadLmsRoute: ApiUploadLmsRoute,
   ApiWebhookRoute: ApiWebhookRoute,
+  ApiAuthSendOtpRoute: ApiAuthSendOtpRoute,
+  ApiAuthVerifyOtpRoute: ApiAuthVerifyOtpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
