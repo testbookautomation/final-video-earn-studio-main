@@ -1,0 +1,12 @@
+{
+  "name": "Testbook Creator Lab",
+  "short_name": "Creator Lab",
+  "description": "Earn UPI payouts by promoting Testbook Pass.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fb",
+  "theme_color": "#0b1437",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
