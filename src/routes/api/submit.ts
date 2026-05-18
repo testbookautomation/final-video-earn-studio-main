@@ -33,8 +33,10 @@ export const Route = createFileRoute("/api/submit")({
           const body = await request.json() as Record<string, unknown>;
 
           const submissionId = String(body.id       ?? "");
-          const creatorPhone = String(body.phone    ?? "");
-          const meta         = { creatorPhone, submissionId };
+          const creatorPhone = String(body.phone    ?? "").replace(/\D/g, "").slice(-10);
+          const creatorId    = String(body.userId   ?? creatorPhone); // real Testbook ObjectId or phone fallback
+          const sessionId    = String(body.sessionId ?? "");
+          const meta         = { creatorPhone, userId: creatorId, sessionId, submissionId };
 
           /* ── Build the Apps Script submit payload ─────────────── */
           const appsScriptPayload = {
@@ -42,7 +44,7 @@ export const Route = createFileRoute("/api/submit")({
             token:        APPS_SCRIPT_TOKEN,
             name:         String(body.fullName     ?? ""),
             phone:        creatorPhone,
-            userId:       creatorPhone,
+            userId:       creatorId,
             email:        String(body.email        ?? ""),
             upi:          String(body.upi          ?? ""),
             examCategory: String(body.examCategory ?? ""),
@@ -54,6 +56,7 @@ export const Route = createFileRoute("/api/submit")({
             upiConfirm:   !!(body.upi),
             consent:      body.consent === true,
             metadata: {
+              sessionId,
               submissionId,
               videoFileName: body.videoFileName ?? null,
               videoFileSize: body.videoFileSize ?? null,

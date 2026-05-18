@@ -6,7 +6,7 @@ import {
   X, Film, Users, Star, ScrollText, ChevronRight,
   CloudUpload, Send, RefreshCw,
 } from "lucide-react";
-import { getUser, saveSubmission, type TBSubmission } from "@/lib/auth";
+import { getOrCreateUserSession, getUser, saveSubmission, type TBSubmission } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 import {
   ACCEPTED_VIDEO_EXTENSIONS,
@@ -65,6 +65,7 @@ function fmt(n: number) {
 function SubmitPage() {
   const navigate = useNavigate();
   const [phone, setPhone]           = useState("");
+  const [userId, setUserId]         = useState("");
   const [upiState, setUpiState]     = useState<UpiState>({ loading: true, upi: null, error: null });
   const [form, setForm]             = useState({
     fullName: "", email: "", upi: "",
@@ -91,7 +92,9 @@ function SubmitPage() {
     const u = getUser();
     if (!u) return;
     setPhone(u.phone);
-    fetch(`/api/fetch-upi?phone=${encodeURIComponent(u.phone)}&userId=${u.phone}`)
+    const uid = u.userId ?? u.phone;
+    setUserId(uid);
+    fetch(`/api/fetch-upi?phone=${encodeURIComponent(u.phone)}&userId=${encodeURIComponent(uid)}`)
       .then((r) => r.json())
       .then((d: { upi?: string | null }) => {
         if (d.upi) setForm((f) => ({ ...f, upi: d.upi! }));
@@ -162,6 +165,7 @@ function SubmitPage() {
     setErrorMsg("");
     track("UGC_creators_submission_submit_clicked", { page: "/submit", platform: form.platform });
     const submissionId = "tb_" + Math.random().toString(36).slice(2, 10);
+    const sessionId = getOrCreateUserSession()?.id ?? "";
 
     /* ── Stage 1: Upload video to LMS CDN ─────────────────── */
     let resolvedCdnUrl = cdnUrl; // reuse if already uploaded (retry scenario)
@@ -173,6 +177,7 @@ function SubmitPage() {
       fd.append("file",          videoFile!);
       fd.append("submissionId",  submissionId);
       fd.append("creatorPhone",  phone);
+      fd.append("sessionId",     sessionId);
       fd.append("platform",      form.platform);
 
       try {
@@ -213,7 +218,7 @@ function SubmitPage() {
       await fetch("/api/submit", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ ...submission, videoFile: undefined }),
+        body:    JSON.stringify({ ...submission, userId, sessionId, videoFile: undefined }),
       });
     } catch { /* non-blocking — submission is saved locally regardless */ }
 

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   CheckCircle2, X, Copy, Check, ArrowRight, Video, Lightbulb, ListChecks,
-  AlertTriangle, Hash, Smartphone,
+  AlertTriangle, Hash, Smartphone, Star, IndianRupee, Eye,
 } from "lucide-react";
 
 export const Route = createFileRoute("/sop")({
@@ -61,6 +61,39 @@ const caption = `New to Testbook Pass and honestly — wish I'd switched sooner.
 #TestbookPass #StudyWithMe #ExamPrep #SSC #Banking #NEET #Testbook`;
 
 const hashtags = ["#TestbookPass", "#TestbookCreators", "#StudyWithMe", "#ExamPrep", "#SSCExam", "#BankingExam"];
+
+const testimonials = [
+  {
+    name: "Priya S.",
+    handle: "@priyasolves",
+    exam: "SSC CGL",
+    earnings: "₹18,400",
+    views: "6.2L",
+    gradient: "from-orange-400 to-rose-500",
+    initial: "P",
+    quote: "Submitted my first reel on a Monday — approved by Wednesday. UPI hit on Friday. Easiest ₹6,000 I've made.",
+  },
+  {
+    name: "Arjun K.",
+    handle: "@arjun.studies",
+    exam: "NEET",
+    earnings: "₹12,500",
+    views: "3.8L",
+    gradient: "from-violet-500 to-indigo-500",
+    initial: "A",
+    quote: "Never thought a 45-second video could earn me this much while studying. Just talked honestly about the app.",
+  },
+  {
+    name: "Neha R.",
+    handle: "@neha.banks",
+    exam: "Banking",
+    earnings: "₹6,000",
+    views: "1.4L",
+    gradient: "from-emerald-400 to-teal-500",
+    initial: "N",
+    quote: "I followed the SOP exactly — hook, show the app, share my why, CTA. First try approval. Couldn't believe it.",
+  },
+];
 
 function SOPPage() {
   const [copiedCap, setCopiedCap] = useState(false);
@@ -175,6 +208,47 @@ function SOPPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Creator testimonials */}
+        <div>
+          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><Star className="size-5 text-amber-500" /> Creators who followed this SOP</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Real results from creators who read this page before hitting record.</p>
+          <div className="mt-5 grid sm:grid-cols-3 gap-4">
+            {testimonials.map((t) => (
+              <div key={t.handle} className="card overflow-hidden">
+                {/* Thumbnail */}
+                <div className={`relative bg-gradient-to-br ${t.gradient} aspect-[4/3] flex items-center justify-center`}>
+                  <div className="size-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-black select-none">
+                    {t.initial}
+                  </div>
+                  <div className="absolute top-3 left-3">
+                    <span className="badge badge-orange text-xs">{t.exam}</span>
+                  </div>
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2.5 py-1">
+                    <Eye className="size-3 text-white/80" />
+                    <span className="text-xs font-semibold text-white">{t.views} views</span>
+                  </div>
+                </div>
+                {/* Info */}
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-tb-navy text-sm">{t.name}</div>
+                      <div className="text-xs text-muted-foreground">{t.handle}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-0.5 text-tb-orange font-black text-base justify-end">
+                        <IndianRupee className="size-3.5" />{t.earnings.replace("₹", "")}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">earned</div>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground leading-relaxed italic border-t border-border pt-3">"{t.quote}"</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -4,7 +4,7 @@
  * Receives client-side events and forwards them to Apps Script Events sheet.
  * Fire-and-forget on the Apps Script side — always returns 200 immediately.
  *
- * Body: { eventName, userId, phone, page, platform, payload }
+ * Body: { eventName, sessionId, userId, phone, page, platform, payload }
  */
 
 import { createFileRoute } from "@tanstack/react-router";
@@ -62,6 +62,7 @@ export const Route = createFileRoute("/api/track")({
               type:      "event",
               token:     APPS_SCRIPT_TOKEN,
               eventName,
+              sessionId: String(body.sessionId ?? ""),
               userId:    String(body.userId    ?? ""),
               phone:     String(body.phone     ?? ""),
               page:      String(body.page      ?? ""),

@@ -12,7 +12,7 @@ import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { SiteLayout } from "@/components/layout/SiteLayout";
-import { setUser, getUser, isBrowser } from "@/lib/auth";
+import { getOrCreateUserSession, getUrlUserParams, setUser, getUser, isBrowser, updateUserSession } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 function NotFoundComponent() {
@@ -55,17 +55,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#0b1437" },
-      { title: "Lovable App" },
+      { title: "Testbook Creator Lab" },
       { name: "description", content: "Creator Lab is a student creator campaign portal for submitting videos and earning UPI payouts." },
       { name: "author", content: "Testbook" },
       { property: "og:site_name", content: "Testbook Creator Lab" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "Testbook Creator Lab" },
       { property: "og:description", content: "Creator Lab is a student creator campaign portal for submitting videos and earning UPI payouts." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://creatorlabs.testbook.com/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Testbookdotcom" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Testbook Creator Lab" },
       { name: "twitter:description", content: "Creator Lab is a student creator campaign portal for submitting videos and earning UPI payouts." },
     ],
     links: [
@@ -100,22 +100,25 @@ function RootComponent() {
 
   useEffect(() => {
     if (!isBrowser()) return;
-    const params = new URLSearchParams(window.location.search);
-    const rawPhone  = params.get("phone")  ?? params.get("Phone")  ?? "";
-    const rawUserId = params.get("userid") ?? params.get("userId") ?? params.get("user_id") ?? "";
+    getOrCreateUserSession();
 
-    if (!rawPhone && !rawUserId) return;
+    const urlUser = getUrlUserParams(window.location.search);
+    if (!urlUser.hasIdentity) return;
 
-    // Normalize phone — strip country code (91) if present, keep last 10 digits
-    const phone = rawPhone.replace(/\D/g, "").slice(-10);
+    const userId = urlUser.userId || urlUser.phone;
+    updateUserSession({ phone: urlUser.phone, userId });
 
-    if (phone.length === 10 || rawUserId) {
+    if (window.location.pathname === "/login") return;
+
+    if (urlUser.phone.length === 10) {
       if (!getUser()) {
-        setUser({ phone, userId: rawUserId || phone, loggedInAt: Date.now() });
-        track("UGC_creators_auth_login_completed", { page: window.location.pathname, payload: { source: "url_params", userId: rawUserId, phone } });
+        setUser({ phone: urlUser.phone, userId, loggedInAt: Date.now() });
+        track("UGC_creators_auth_login_completed", {
+          page: window.location.pathname,
+          payload: { source: "url_params", userId, phone: urlUser.phone },
+        });
       }
 
-      // Strip params from URL without reloading
       const clean = window.location.pathname + window.location.hash;
       window.history.replaceState({}, "", clean);
 

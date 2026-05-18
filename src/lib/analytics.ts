@@ -1,7 +1,7 @@
 // Client-side event tracker — fire-and-forget, never throws.
 // Sends events to /api/track which forwards them to Apps Script.
 
-import { isBrowser, getUser } from "@/lib/auth";
+import { isBrowser, getOrCreateUserSession, getUser } from "@/lib/auth";
 
 type TrackOptions = {
   page?:     string;
@@ -30,10 +30,12 @@ export function track(eventName: string, opts: TrackOptions = {}): void {
   if (!allowedEvents.has(eventName)) return;
 
   const user = getUser();
+  const session = getOrCreateUserSession();
   const body = {
     eventName,
-    userId:   user?.phone ?? "",
-    phone:    user?.phone ?? "",
+    sessionId: user?.sessionId ?? session?.id ?? "",
+    userId:   user?.userId ?? user?.phone ?? session?.userId ?? "",
+    phone:    user?.phone ?? session?.phone ?? "",
     page:     opts.page     ?? window.location.pathname,
     platform: opts.platform ?? "",
     payload:  opts.payload  ?? {},

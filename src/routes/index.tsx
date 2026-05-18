@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ArrowRight, Play, IndianRupee, Users, Trophy, Sparkles, CheckCircle2,
-  LogIn, Video, Upload, ShieldCheck, Wallet, Star, ChevronDown, X, Hash,
-  Zap, Clock,
+  ArrowRight, IndianRupee, Users, Trophy, Sparkles, CheckCircle2,
+  LogIn, Video, Upload, ShieldCheck, Wallet, ChevronDown, Hash,
+  Zap, Clock, X,
 } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -49,12 +50,6 @@ const donts = [
   "No misleading guarantees about exam results",
 ];
 
-const testimonials = [
-  { name: "Priya S.", handle: "@priyasolves", exam: "SSC CGL", earnings: "₹18,400", views: "6.2L", thumb: "https://images.unsplash.com/photo-1544717297-fa95b6ee9643?w=600&q=70" },
-  { name: "Arjun K.",  handle: "@arjun.studies", exam: "NEET",   earnings: "₹12,500", views: "3.8L", thumb: "https://images.unsplash.com/photo-1573164713988-8665fc963095?w=600&q=70" },
-  { name: "Neha R.",   handle: "@neha.banks",   exam: "Banking", earnings: "₹6,000",  views: "1.4L", thumb: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&q=70" },
-];
-
 const faqs = [
   { q: "Who can apply to Creator Lab?", a: "Any student or aspirant in India with a public Instagram, YouTube, or Facebook profile. Min 500 followers recommended but not mandatory — content quality matters more." },
   { q: "When do I get paid?", a: "Within 48 hours of crossing each view milestone. Payouts are sent directly to the UPI ID linked to your phone number." },
@@ -65,7 +60,8 @@ const faqs = [
 
 function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [video, setVideo] = useState<typeof testimonials[number] | null>(null);
+
+  useEffect(() => { track("page_view", { page: "/" }); }, []);
 
   return (
     <>
@@ -235,49 +231,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section className="bg-white border-y border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16 md:py-20">
-          <div className="text-center max-w-2xl mx-auto">
-            <span className="badge text-xs"><Star className="size-3.5" /> Creator stories</span>
-            <h2 className="mt-4 text-3xl md:text-4xl font-bold text-tb-navy">Real students. Real payouts.</h2>
-            <p className="mt-3 text-base text-muted-foreground">These creators started just like you — with a phone and a story.</p>
-          </div>
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <button key={t.handle} onClick={() => setVideo(t)} className="card overflow-hidden text-left group">
-                <div className="relative aspect-[4/5] overflow-hidden bg-secondary">
-                  <img src={t.thumb} alt={t.name} className="size-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                  <div className="absolute top-3 left-3">
-                    <span className="badge badge-orange text-xs">{t.exam}</span>
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="size-14 rounded-full bg-white/95 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                      <Play className="size-6 fill-tb-navy text-tb-navy ml-1" />
-                    </span>
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <div className="text-base font-bold">{t.name}</div>
-                    <div className="text-sm text-white/75 mt-0.5">{t.handle}</div>
-                  </div>
-                </div>
-                <div className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-muted-foreground font-medium">Total earned</div>
-                    <div className="text-xl font-bold text-tb-orange mt-0.5">{t.earnings}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-muted-foreground font-medium">Total views</div>
-                    <div className="text-xl font-bold text-tb-navy mt-0.5">{t.views}</div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ ── */}
       <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center">
@@ -322,33 +275,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ── VIDEO MODAL ── */}
-      {video && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur flex items-center justify-center p-4 fade-up" onClick={() => setVideo(null)}>
-          <div className="relative max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setVideo(null)} className="absolute -top-3 -right-3 size-9 rounded-full bg-white text-tb-navy flex items-center justify-center shadow-lg hover:bg-red-50 hover:text-red-600 transition-colors">
-              <X className="size-4" />
-            </button>
-            <div className="card overflow-hidden bg-black">
-              <div className="relative aspect-[9/16]">
-                <img src={video.thumb} alt={video.name} className="size-full object-cover opacity-80" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <div className="size-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto pulse-soft">
-                      <Play className="size-7 fill-white" />
-                    </div>
-                    <div className="mt-3 text-sm text-white/80">Video preview · demo</div>
-                  </div>
-                </div>
-              </div>
-              <div className="p-5 bg-white">
-                <div className="font-bold text-tb-navy text-base">{video.name} <span className="text-muted-foreground font-normal text-sm">{video.handle}</span></div>
-                <div className="text-sm text-muted-foreground mt-1">Earned {video.earnings} · {video.views} views · {video.exam}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -31,7 +31,7 @@ var HEADERS = {
     "Updated At","IP Address","Metadata JSON","Approve","Reject"
   ],
   EVENTS: [
-    "Event ID","Timestamp","User ID","Phone","Event Name","Page","Platform","Payload"
+    "Event ID","Timestamp","User ID","Phone","Event Name","Page","Platform","Payload","Session ID"
   ],
   USERS: [
     "User ID","Phone","Name","Email","Exam Category","UPI ID","First Seen","Last Seen","Submission Count"
@@ -414,7 +414,8 @@ function handleEvent(data) {
     eventId, new Date().toISOString(),
     safeStr(data.userId), normalizePhone(data.phone),
     eventName, safeStr(data.page), safeStr(data.platform),
-    JSON.stringify(data.payload || {})
+    JSON.stringify(data.payload || {}),
+    safeStr(data.sessionId)
   ]);
 
   return { success: true, eventId: eventId };
@@ -697,7 +698,7 @@ function testSubmit() {
 function testEvent() {
   Logger.log(JSON.stringify(handleEvent({
     token: CONFIG.SECRET_TOKEN, type: "event",
-    eventName: "page_view", userId: "9999999999", phone: "9999999999",
+    eventName: "page_view", sessionId: "test-session-001", userId: "9999999999", phone: "9999999999",
     page: "/", platform: "", payload: { source: "test" }
   })));
 }

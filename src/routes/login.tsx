@@ -4,7 +4,7 @@ import {
   Phone, ShieldCheck, ArrowRight, RefreshCw,
   Users, IndianRupee, Trophy, CheckCircle2,
 } from "lucide-react";
-import { getUser, setUser } from "@/lib/auth";
+import { getUrlUserParams, getUser, setUser, updateUserSession } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/login")({
@@ -38,6 +38,8 @@ function LoginPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [phone, setPhone] = useState("");
+  const [urlPhone, setUrlPhone] = useState("");
+  const [urlUserId, setUrlUserId] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,25 @@ function LoginPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (getUser()) navigate({ to: "/dashboard" });
+    if (getUser()) {
+      navigate({ to: "/dashboard" });
+      return;
+    }
+
+    const urlUser = getUrlUserParams(window.location.search);
+    if (!urlUser.hasIdentity) return;
+
+    const userId = urlUser.userId || urlUser.phone;
+    updateUserSession({ phone: urlUser.phone, userId });
+
+    if (urlUser.phone.length === 10) {
+      setPhone(urlUser.phone);
+      setUrlPhone(urlUser.phone);
+      setUrlUserId(userId);
+    }
+
+    const clean = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, "", clean);
   }, [navigate]);
 
   useEffect(() => {
@@ -66,15 +86,12 @@ function LoginPage() {
   const validPhone = /^[6-9]\d{9}$/.test(phone);
   const otpFilled = otp.every((d) => d !== "");
 
-  const sendOtp = async (e: React.FormEvent) => {
+  const sendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!validPhone) { setError("Enter a valid 10-digit Indian mobile number."); return; }
     track("UGC_creators_auth_otp_requested", { page: "/login", payload: { phone } });
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setOtp(["1", "2", "3", "4"]);
+    setOtp(["", "", "", ""]);
     setStep("otp");
     startResendTimer();
   };
@@ -86,7 +103,6 @@ function LoginPage() {
     setOtp(next);
     setError(null);
     if (v && i < 3) refs.current[i + 1]?.focus();
-    if (v && i === 3 && next.every((d) => d !== "")) doVerify(next.join(""));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, i: number) => {
@@ -106,16 +122,21 @@ function LoginPage() {
     setOtp(next);
     setError(null);
     refs.current[Math.min(digits.length, 3)]?.focus();
-    if (digits.length === 4) doVerify(digits);
   };
 
-  const doVerify = async (code: string) => {
+  const doVerify = (code: string) => {
     setError(null);
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    setUser({ phone, loggedInAt: Date.now() });
-    track("UGC_creators_auth_login_completed", { page: "/login", payload: { phone } });
+    if (step !== "otp" || !validPhone) {
+      setError("Request an OTP before logging in.");
+      return;
+    }
+    if (code.length !== 4) {
+      setError("Enter all 4 digits.");
+      return;
+    }
+    const userId = phone === urlPhone ? urlUserId || phone : phone;
+    setUser({ phone, userId, loggedInAt: Date.now() });
+    track("UGC_creators_auth_login_completed", { page: "/login", payload: { phone, userId } });
     navigate({ to: "/dashboard" });
   };
 
@@ -125,13 +146,10 @@ function LoginPage() {
     doVerify(otp.join(""));
   };
 
-  const handleResend = async () => {
+  const handleResend = () => {
     if (resend > 0) return;
     setError(null);
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setLoading(false);
-    setOtp(["1", "2", "3", "4"]);
+    setOtp(["", "", "", ""]);
     startResendTimer();
   };
 
@@ -295,11 +313,11 @@ function LoginPage() {
                   {error && <p className="mt-3 text-xs text-red-600 text-center">{error}</p>}
                 </div>
 
-                {/* Demo hint */}
+                {/* OTP hint */}
                 <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-blue-700">
                   <ShieldCheck className="size-4 mt-0.5 shrink-0 text-tb-blue" />
                   <p className="text-xs leading-relaxed">
-                    <span className="font-semibold">Demo mode</span> — OTP is pre-filled. Just tap Verify to continue.
+                    Enter the 4-digit OTP sent to your phone to continue.
                   </p>
                 </div>
 

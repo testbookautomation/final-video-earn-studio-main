@@ -5,6 +5,7 @@
  *   file          — video File blob
  *   submissionId  — client-generated submission ID (for event correlation)
  *   creatorPhone  — creator's phone number
+ *   sessionId     — browser session ID
  *   platform      — instagram | youtube | facebook
  *
  * Emits only final, relevant events:
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/api/upload-lms")({
       POST: async ({ request }) => {
         let submissionId = "";
         let creatorPhone = "";
+        let sessionId = "";
         let originalFilename = "";
 
         try {
@@ -54,6 +56,7 @@ export const Route = createFileRoute("/api/upload-lms")({
           const file        = formData.get("file") as File | null;
           submissionId      = String(formData.get("submissionId") ?? "");
           creatorPhone      = String(formData.get("creatorPhone")  ?? "");
+          sessionId         = String(formData.get("sessionId")     ?? "");
           const platform    = String(formData.get("platform")      ?? "");
 
           if (!file || file.size === 0) {
@@ -80,7 +83,7 @@ export const Route = createFileRoute("/api/upload-lms")({
           const fileExt          = getFileExt(cleanFilename);
           const prefix           = `${Date.now()}-${cleanFilename}`;
           const fileSizeBytes    = file.size;
-          const meta             = { creatorPhone, submissionId };
+          const meta             = { creatorPhone, sessionId, submissionId };
 
           let token: string;
           try {
@@ -167,7 +170,7 @@ export const Route = createFileRoute("/api/upload-lms")({
             reason: "unexpected_error",
             error:    String(err),
             filename: originalFilename,
-          }, { creatorPhone, submissionId });
+          }, { creatorPhone, sessionId, submissionId });
 
           return json({ ok: false, error: String(err) }, 500);
         }

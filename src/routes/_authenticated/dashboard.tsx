@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowRight, CheckCircle2, Clock, Eye, Heart, MessageCircle, IndianRupee,
-  Wallet, Send, FileText, RefreshCw, Sparkles, AlertCircle, PartyPopper,
-  ShieldCheck, XCircle,
+  Wallet, Send, FileText, Sparkles, AlertCircle, PartyPopper,
+  ShieldCheck, XCircle, ExternalLink,
 } from "lucide-react";
-import { getSubmission, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
+import { getSubmission, getSubmissions, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -88,82 +88,124 @@ function paymentStatusEventName(status?: string): string | null {
   }
 }
 
+function statusClasses(status: SubmissionStatus): string {
+  switch (status) {
+    case "approved":
+    case "live":
+    case "milestone_reached":
+    case "paid":
+      return "badge-green";
+    case "rejected":
+      return "badge-red";
+    case "under_review":
+      return "badge-amber";
+    default:
+      return "";
+  }
+}
+
+function paymentLabel(submission: TBSubmission): string {
+  if (submission.payoutStatus) return submission.payoutStatus.replace(/_/g, " ");
+  if (submission.status === "paid") return "Paid";
+  if (isEligible(submission.payoutEligibility) || submission.status === "milestone_reached") return "Eligible";
+  return "Not eligible yet";
+}
+
 function DashboardPage() {
   const [submission, setSubmission] = useState<TBSubmission | null>(null);
+  const [submissions, setSubmissions] = useState<TBSubmission[]>([]);
   const [phone, setPhone] = useState("");
+  const [userId, setUserId] = useState("");
   const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const u = getUser();
-    if (u) setPhone(u.phone);
+    if (u) {
+      setPhone(u.phone);
+      setUserId(u.userId ?? u.phone);
+    }
     setSubmission(getSubmission());
-    const sync = () => setSubmission(getSubmission());
+    setSubmissions(getSubmissions());
+    const sync = () => {
+      setSubmission(getSubmission());
+      setSubmissions(getSubmissions());
+    };
     window.addEventListener("tb:submission", sync);
     return () => window.removeEventListener("tb:submission", sync);
   }, []);
 
-  // Fetch real status from Apps Script on mount (after phone is set)
+  // Poll Apps Script for real status — on mount, every 30s, and on tab focus
   useEffect(() => {
     if (!phone) return;
-    setSyncing(true);
-    fetch(`/api/sync-status?phone=${encodeURIComponent(phone)}`)
-      .then((r) => r.json())
-      .then((data: SyncResult) => {
-        if (!data.ok || !data.found) return;
-        const current = getSubmission();
-        if (!current) return;
-        const updated: TBSubmission = {
-          ...current,
-          status:            data.status ?? current.status,
-          rejectionReason:   data.rejectionReason ?? current.rejectionReason,
-          payoutEligibility: data.payoutEligibility ?? current.payoutEligibility,
-          payoutStatus:      data.payoutStatus ?? current.payoutStatus,
-          views:             data.views    ?? current.views,
-          likes:             data.likes    ?? current.likes,
-          comments:          data.comments ?? current.comments,
-          payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : current.payoutInr,
-          upi:               data.upi && data.upi.length > 2 ? data.upi : current.upi,
-        };
-        // Only save if something actually changed
-        if (JSON.stringify(updated) !== JSON.stringify(current)) {
-          const payload = {
-            submissionId: current.id,
-            previousStatus: current.status,
-            status: updated.status,
-            previousPayoutEligibility: current.payoutEligibility ?? "",
-            payoutEligibility: updated.payoutEligibility ?? "",
-            previousPayoutStatus: current.payoutStatus ?? "",
-            payoutStatus: updated.payoutStatus ?? "",
-            payoutInr: updated.payoutInr,
-            views: updated.views,
-            rejectionReason: updated.rejectionReason ?? "",
+
+    const TERMINAL: SubmissionStatus[] = ["paid", "rejected"];
+    const POLL_MS = 30_000;
+
+    const doSync = (isFirstLoad = false) => {
+      const current = getSubmission();
+      // Stop polling once in a terminal state
+      if (current && TERMINAL.includes(current.status)) return;
+
+      if (isFirstLoad) setSyncing(true);
+
+      fetch(`/api/sync-status?phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`)
+        .then((r) => r.json())
+        .then((data: SyncResult) => {
+          if (!data.ok || !data.found) return;
+          const cur = getSubmission();
+          if (!cur) return;
+          const updated: TBSubmission = {
+            ...cur,
+            status:            data.status ?? cur.status,
+            rejectionReason:   data.rejectionReason ?? cur.rejectionReason,
+            payoutEligibility: data.payoutEligibility ?? cur.payoutEligibility,
+            payoutStatus:      data.payoutStatus ?? cur.payoutStatus,
+            views:             data.views    ?? cur.views,
+            likes:             data.likes    ?? cur.likes,
+            comments:          data.comments ?? cur.comments,
+            payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : cur.payoutInr,
+            upi:               data.upi && data.upi.length > 2 ? data.upi : cur.upi,
           };
-
-          const statusEvent = current.status !== updated.status
-            ? statusEventName(updated.status)
-            : null;
-          const firedEvents = new Set<string>();
-          if (statusEvent) {
-            track(statusEvent, { page: "/dashboard", payload });
-            firedEvents.add(statusEvent);
+          if (JSON.stringify(updated) !== JSON.stringify(cur)) {
+            const payload = {
+              submissionId: cur.id,
+              previousStatus: cur.status,
+              status: updated.status,
+              previousPayoutEligibility: cur.payoutEligibility ?? "",
+              payoutEligibility: updated.payoutEligibility ?? "",
+              previousPayoutStatus: cur.payoutStatus ?? "",
+              payoutStatus: updated.payoutStatus ?? "",
+              payoutInr: updated.payoutInr,
+              views: updated.views,
+              rejectionReason: updated.rejectionReason ?? "",
+            };
+            const statusEvent = cur.status !== updated.status ? statusEventName(updated.status) : null;
+            const firedEvents = new Set<string>();
+            if (statusEvent) { track(statusEvent, { page: "/dashboard", payload }); firedEvents.add(statusEvent); }
+            if (!isEligible(cur.payoutEligibility) && isEligible(updated.payoutEligibility)) {
+              track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
+            }
+            const payoutEvent = cur.payoutStatus !== updated.payoutStatus ? paymentStatusEventName(updated.payoutStatus) : null;
+            if (payoutEvent && !firedEvents.has(payoutEvent)) track(payoutEvent, { page: "/dashboard", payload });
+            saveSubmission(updated);
+            setSubmission(updated);
+            setSubmissions(getSubmissions());
           }
+        })
+        .catch(() => {})
+        .finally(() => { if (isFirstLoad) setSyncing(false); });
+    };
 
-          if (!isEligible(current.payoutEligibility) && isEligible(updated.payoutEligibility)) {
-            track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
-          }
+    doSync(true);
+    const timer = setInterval(() => doSync(false), POLL_MS);
 
-          const payoutEvent = current.payoutStatus !== updated.payoutStatus
-            ? paymentStatusEventName(updated.payoutStatus)
-            : null;
-          if (payoutEvent && !firedEvents.has(payoutEvent)) {
-            track(payoutEvent, { page: "/dashboard", payload });
-          }
+    const onVisible = () => { if (document.visibilityState === "visible") doSync(false); };
+    document.addEventListener("visibilitychange", onVisible);
 
-          saveSubmission(updated);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setSyncing(false));
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [phone]);
 
   if (!submission) {
@@ -178,26 +220,6 @@ function DashboardPage() {
   const progressPct = nextMilestone
     ? Math.min(100, ((submission.views - (lastMilestone?.v ?? 0)) / (nextMilestone.v - (lastMilestone?.v ?? 0))) * 100)
     : 100;
-
-  // Dev-only status cycler
-  const cycle = () => {
-    const next: SubmissionStatus = order[(order.indexOf(submission.status) + 1) % order.length];
-    const bumpedViews = next === "live" ? Math.max(submission.views, 4200)
-      : next === "milestone_reached" ? Math.max(submission.views, 10500)
-      : next === "paid" ? Math.max(submission.views, 12000)
-      : submission.views;
-    const lastM = [...milestones].reverse().find((m) => m.v <= bumpedViews);
-    saveSubmission({
-      ...submission,
-      status: next,
-      views: bumpedViews,
-      likes: Math.round(bumpedViews * 0.06),
-      comments: Math.round(bumpedViews * 0.008),
-      payoutInr: next === "paid" ? (lastM?.pay ?? 0) : submission.payoutInr,
-      payoutEligibility: (next === "milestone_reached" || next === "paid") ? "Eligible" : submission.payoutEligibility,
-      history: [...submission.history, { status: next, at: Date.now() }],
-    });
-  };
 
   return (
     <section className="mx-auto max-w-6xl px-4 sm:px-6 py-10 md:py-14 space-y-6">
@@ -363,6 +385,8 @@ function DashboardPage() {
         </div>
       </div>
 
+      <UploadedVideos submissions={submissions} />
+
       {/* Quick actions */}
       <div className="card p-6">
         <div className="text-base font-bold text-tb-navy mb-4">Quick actions</div>
@@ -391,19 +415,102 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Dev-only cycler */}
-      {import.meta.env.DEV && (
-        <div className="card p-4 flex items-center justify-between bg-amber-50/50 !border-amber-200">
-          <div>
-            <div className="text-xs font-semibold text-amber-800">DEV ONLY · Status cycler</div>
-            <div className="text-xs text-amber-700">Cycles status + bumps views to test the flow.</div>
-          </div>
-          <button onClick={cycle} className="btn-ghost text-amber-800 border-amber-300">
-            <RefreshCw className="size-4" /> Next status
-          </button>
-        </div>
-      )}
     </section>
+  );
+}
+
+function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
+  if (submissions.length === 0) return null;
+
+  return (
+    <div className="card p-6">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <div className="text-base font-bold text-tb-navy">Uploaded videos</div>
+          <div className="text-sm text-muted-foreground mt-0.5">Previous submissions, review status and payout state.</div>
+        </div>
+        <span className="badge text-xs">{submissions.length} total</span>
+      </div>
+
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs text-muted-foreground">
+              <th className="py-3 pr-4 font-semibold">Video</th>
+              <th className="py-3 px-4 font-semibold">Status</th>
+              <th className="py-3 px-4 font-semibold">Payment</th>
+              <th className="py-3 pl-4 font-semibold text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {submissions.map((item) => (
+              <tr key={item.id} className="border-b border-border/70 last:border-0">
+                <td className="py-4 pr-4">
+                  <div className="font-semibold text-tb-navy truncate max-w-[280px]">
+                    {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
+                  </div>
+                  <a
+                    href={item.cdnUrl || item.videoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
+                  >
+                    Open video <ExternalLink className="size-3" />
+                  </a>
+                </td>
+                <td className="py-4 px-4">
+                  <span className={`badge text-xs capitalize ${statusClasses(item.status)}`}>
+                    {item.status.replace(/_/g, " ")}
+                  </span>
+                </td>
+                <td className="py-4 px-4">
+                  <div className="font-medium text-tb-navy capitalize">{paymentLabel(item)}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{item.upi || "UPI not added"}</div>
+                </td>
+                <td className="py-4 pl-4 text-right font-black text-tb-navy">
+                  ₹{item.payoutInr.toLocaleString("en-IN")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="md:hidden space-y-3">
+        {submissions.map((item) => (
+          <div key={item.id} className="rounded-xl border border-border p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-semibold text-tb-navy truncate">
+                  {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
+                </div>
+                <a
+                  href={item.cdnUrl || item.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
+                >
+                  Open video <ExternalLink className="size-3" />
+                </a>
+              </div>
+              <span className={`badge text-xs capitalize shrink-0 ${statusClasses(item.status)}`}>
+                {item.status.replace(/_/g, " ")}
+              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-xs text-muted-foreground">Payment</div>
+                <div className="font-semibold text-tb-navy capitalize">{paymentLabel(item)}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">Amount</div>
+                <div className="font-black text-tb-navy">₹{item.payoutInr.toLocaleString("en-IN")}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

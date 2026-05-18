@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxHEfj6FeZiuJmIeanZpSxGWkD3YHyvxhjkAa99cmw8lGNoY-gEqTibMHtBmGa3jkjauw/exec";
+  "https://script.google.com/macros/s/AKfycbzXMa5OLaO-C5XCcDfmIEjtImi_UwdHGK9hK2sMrj4nacDKmr9l3lHMJtc0oQbA7mEi7Q/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -22,6 +22,8 @@ export const WEBHOOK_URL = APPS_SCRIPT_URL;
 
 export type EventMeta = {
   creatorPhone?: string;
+  userId?: string;
+  sessionId?: string;
   submissionId?: string;
 };
 
@@ -57,7 +59,8 @@ export async function fireEvent(
     type: "event",
     token: APPS_SCRIPT_TOKEN,
     eventName: event,
-    userId: meta.creatorPhone ?? "",
+    sessionId: meta.sessionId ?? "",
+    userId: meta.userId ?? meta.creatorPhone ?? "",
     phone: meta.creatorPhone ?? "",
     page: String(data.page ?? ""),
     platform: String(data.platform ?? ""),
