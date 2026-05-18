@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
 import { Route as ApiUploadLmsRouteImport } from './routes/api/upload-lms'
 import { Route as ApiTrackRouteImport } from './routes/api/track'
+import { Route as ApiSyncStatusRouteImport } from './routes/api/sync-status'
 import { Route as ApiSubmitRouteImport } from './routes/api/submit'
 import { Route as ApiFetchUpiRouteImport } from './routes/api/fetch-upi'
 import { Route as AuthenticatedSubmitRouteImport } from './routes/_authenticated/submit'
@@ -61,6 +62,11 @@ const ApiTrackRoute = ApiTrackRouteImport.update({
   path: '/api/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSyncStatusRoute = ApiSyncStatusRouteImport.update({
+  id: '/api/sync-status',
+  path: '/api/sync-status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSubmitRoute = ApiSubmitRouteImport.update({
   id: '/api/submit',
   path: '/api/submit',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/sync-status': typeof ApiSyncStatusRoute
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/sync-status': typeof ApiSyncStatusRoute
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/_authenticated/submit': typeof AuthenticatedSubmitRoute
   '/api/fetch-upi': typeof ApiFetchUpiRoute
   '/api/submit': typeof ApiSubmitRoute
+  '/api/sync-status': typeof ApiSyncStatusRoute
   '/api/track': typeof ApiTrackRoute
   '/api/upload-lms': typeof ApiUploadLmsRoute
   '/api/webhook': typeof ApiWebhookRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/sync-status'
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/sync-status'
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/_authenticated/submit'
     | '/api/fetch-upi'
     | '/api/submit'
+    | '/api/sync-status'
     | '/api/track'
     | '/api/upload-lms'
     | '/api/webhook'
@@ -174,6 +186,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiFetchUpiRoute: typeof ApiFetchUpiRoute
   ApiSubmitRoute: typeof ApiSubmitRoute
+  ApiSyncStatusRoute: typeof ApiSyncStatusRoute
   ApiTrackRoute: typeof ApiTrackRoute
   ApiUploadLmsRoute: typeof ApiUploadLmsRoute
   ApiWebhookRoute: typeof ApiWebhookRoute
@@ -237,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sync-status': {
+      id: '/api/sync-status'
+      path: '/api/sync-status'
+      fullPath: '/api/sync-status'
+      preLoaderRoute: typeof ApiSyncStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/submit': {
       id: '/api/submit'
       path: '/api/submit'
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiFetchUpiRoute: ApiFetchUpiRoute,
   ApiSubmitRoute: ApiSubmitRoute,
+  ApiSyncStatusRoute: ApiSyncStatusRoute,
   ApiTrackRoute: ApiTrackRoute,
   ApiUploadLmsRoute: ApiUploadLmsRoute,
   ApiWebhookRoute: ApiWebhookRoute,

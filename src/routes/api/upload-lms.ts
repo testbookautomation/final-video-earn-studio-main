@@ -8,8 +8,8 @@
  *   platform      — instagram | youtube | facebook
  *
  * Emits only final, relevant events:
- *   creator.video.upload.completed
- *   creator.video.upload.failed
+ *   UGC_creators_video_upload_completed
+ *   UGC_creators_video_upload_failed
  *
  * Returns: { ok, cdnUrl, filename }
  */

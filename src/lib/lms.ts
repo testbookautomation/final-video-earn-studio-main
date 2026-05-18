@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbweDgot9EjYJ3SkurdgwOVEBx-LrTWhsq_Rc5cp6Nsc1YrrfKSGzOWuuiNAFxoANn4xFw/exec";
+  "https://script.google.com/macros/s/AKfycbxHEfj6FeZiuJmIeanZpSxGWkD3YHyvxhjkAa99cmw8lGNoY-gEqTibMHtBmGa3jkjauw/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -28,13 +28,22 @@ export type EventMeta = {
 /**
  * Relevant webhook event names.
  *
- * Naming convention: creator.<area>.<action>.<result>
+ * Naming convention: UGC_creators_<area>_<action>_<result>
  */
 export const EVENT = {
-  VIDEO_UPLOAD_COMPLETED:   "creator.video.upload.completed",
-  VIDEO_UPLOAD_FAILED:      "creator.video.upload.failed",
-  SUBMISSION_SYNC_COMPLETED:"creator.submission.sync.completed",
-  SUBMISSION_SYNC_FAILED:   "creator.submission.sync.failed",
+  VIDEO_UPLOAD_COMPLETED:   "UGC_creators_video_upload_completed",
+  VIDEO_UPLOAD_FAILED:      "UGC_creators_video_upload_failed",
+  SUBMISSION_SYNC_COMPLETED:"UGC_creators_submission_sync_completed",
+  SUBMISSION_SYNC_FAILED:   "UGC_creators_submission_sync_failed",
+  VIDEO_REVIEW_STARTED:     "UGC_creators_video_review_started",
+  VIDEO_APPROVED:           "UGC_creators_video_approved",
+  VIDEO_REJECTED:           "UGC_creators_video_rejected",
+  VIDEO_LIVE:               "UGC_creators_video_live",
+  VIDEO_MILESTONE_REACHED:  "UGC_creators_video_milestone_reached",
+  PAYMENT_ELIGIBLE:         "UGC_creators_payment_eligible",
+  PAYMENT_INITIATED:        "UGC_creators_payment_initiated",
+  PAYMENT_COMPLETED:        "UGC_creators_payment_completed",
+  PAYMENT_FAILED:           "UGC_creators_payment_failed",
 } as const;
 
 /* ── Webhook fire (fire-and-forget) ──────────────────────── */

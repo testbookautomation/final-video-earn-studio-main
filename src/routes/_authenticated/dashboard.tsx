@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight, CheckCircle2, Clock, Eye, Heart, MessageCircle, IndianRupee,
   Wallet, Send, FileText, RefreshCw, Sparkles, AlertCircle, PartyPopper,
+  ShieldCheck, XCircle,
 } from "lucide-react";
 import { getSubmission, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -37,9 +39,59 @@ const timeline: { key: SubmissionStatus; label: string; desc: string }[] = [
 
 const order: SubmissionStatus[] = ["submitted","under_review","approved","live","milestone_reached","paid"];
 
+type SyncResult = {
+  ok: boolean;
+  found: boolean;
+  status?: SubmissionStatus;
+  rejectionReason?: string;
+  views?: number;
+  likes?: number;
+  comments?: number;
+  payoutInr?: number;
+  payoutStatus?: string;
+  payoutEligibility?: string;
+  upi?: string;
+};
+
+function isEligible(value?: string): boolean {
+  return (value ?? "").trim().toLowerCase() === "eligible";
+}
+
+function normalizedPayoutStatus(value?: string): string {
+  return (value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function statusEventName(status?: SubmissionStatus): string | null {
+  switch (status) {
+    case "under_review":      return "UGC_creators_video_review_started";
+    case "approved":          return "UGC_creators_video_approved";
+    case "rejected":          return "UGC_creators_video_rejected";
+    case "live":              return "UGC_creators_video_live";
+    case "milestone_reached": return "UGC_creators_video_milestone_reached";
+    case "paid":              return "UGC_creators_payment_completed";
+    default:                  return null;
+  }
+}
+
+function paymentStatusEventName(status?: string): string | null {
+  switch (normalizedPayoutStatus(status)) {
+    case "initiated":
+    case "processing":
+    case "queued":
+    case "pending": return "UGC_creators_payment_initiated";
+    case "paid":
+    case "completed":
+    case "success": return "UGC_creators_payment_completed";
+    case "failed":
+    case "rejected": return "UGC_creators_payment_failed";
+    default: return null;
+  }
+}
+
 function DashboardPage() {
   const [submission, setSubmission] = useState<TBSubmission | null>(null);
   const [phone, setPhone] = useState("");
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const u = getUser();
@@ -50,12 +102,77 @@ function DashboardPage() {
     return () => window.removeEventListener("tb:submission", sync);
   }, []);
 
+  // Fetch real status from Apps Script on mount (after phone is set)
+  useEffect(() => {
+    if (!phone) return;
+    setSyncing(true);
+    fetch(`/api/sync-status?phone=${encodeURIComponent(phone)}`)
+      .then((r) => r.json())
+      .then((data: SyncResult) => {
+        if (!data.ok || !data.found) return;
+        const current = getSubmission();
+        if (!current) return;
+        const updated: TBSubmission = {
+          ...current,
+          status:            data.status ?? current.status,
+          rejectionReason:   data.rejectionReason ?? current.rejectionReason,
+          payoutEligibility: data.payoutEligibility ?? current.payoutEligibility,
+          payoutStatus:      data.payoutStatus ?? current.payoutStatus,
+          views:             data.views    ?? current.views,
+          likes:             data.likes    ?? current.likes,
+          comments:          data.comments ?? current.comments,
+          payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : current.payoutInr,
+          upi:               data.upi && data.upi.length > 2 ? data.upi : current.upi,
+        };
+        // Only save if something actually changed
+        if (JSON.stringify(updated) !== JSON.stringify(current)) {
+          const payload = {
+            submissionId: current.id,
+            previousStatus: current.status,
+            status: updated.status,
+            previousPayoutEligibility: current.payoutEligibility ?? "",
+            payoutEligibility: updated.payoutEligibility ?? "",
+            previousPayoutStatus: current.payoutStatus ?? "",
+            payoutStatus: updated.payoutStatus ?? "",
+            payoutInr: updated.payoutInr,
+            views: updated.views,
+            rejectionReason: updated.rejectionReason ?? "",
+          };
+
+          const statusEvent = current.status !== updated.status
+            ? statusEventName(updated.status)
+            : null;
+          const firedEvents = new Set<string>();
+          if (statusEvent) {
+            track(statusEvent, { page: "/dashboard", payload });
+            firedEvents.add(statusEvent);
+          }
+
+          if (!isEligible(current.payoutEligibility) && isEligible(updated.payoutEligibility)) {
+            track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
+          }
+
+          const payoutEvent = current.payoutStatus !== updated.payoutStatus
+            ? paymentStatusEventName(updated.payoutStatus)
+            : null;
+          if (payoutEvent && !firedEvents.has(payoutEvent)) {
+            track(payoutEvent, { page: "/dashboard", payload });
+          }
+
+          saveSubmission(updated);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setSyncing(false));
+  }, [phone]);
+
   if (!submission) {
     return <EmptyState phone={phone} />;
   }
 
   const stage = order.indexOf(submission.status);
   const isRejected = submission.status === "rejected";
+  const isPaymentEligible = isEligible(submission.payoutEligibility) || submission.status === "milestone_reached" || submission.status === "paid";
   const nextMilestone = milestones.find((m) => m.v > submission.views);
   const lastMilestone = [...milestones].reverse().find((m) => m.v <= submission.views);
   const progressPct = nextMilestone
@@ -77,6 +194,7 @@ function DashboardPage() {
       likes: Math.round(bumpedViews * 0.06),
       comments: Math.round(bumpedViews * 0.008),
       payoutInr: next === "paid" ? (lastM?.pay ?? 0) : submission.payoutInr,
+      payoutEligibility: (next === "milestone_reached" || next === "paid") ? "Eligible" : submission.payoutEligibility,
       history: [...submission.history, { status: next, at: Date.now() }],
     });
   };
@@ -84,10 +202,46 @@ function DashboardPage() {
   return (
     <section className="mx-auto max-w-6xl px-4 sm:px-6 py-10 md:py-14 space-y-6">
       <div className="fade-up">
-        <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
+          {syncing && <span className="text-xs text-muted-foreground animate-pulse">Syncing status…</span>}
+        </div>
         <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
         <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>
       </div>
+
+      {/* Rejection reason banner */}
+      {isRejected && submission.rejectionReason && (
+        <div className="card p-5 !border-red-200 bg-red-50/50 flex items-start gap-3 fade-up">
+          <XCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
+          <div>
+            <div className="text-sm font-bold text-red-800">Reason for rejection</div>
+            <div className="text-sm text-red-700 mt-1 leading-relaxed">{submission.rejectionReason}</div>
+            <Link to="/submit" className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors px-3 py-1.5 rounded-lg">
+              Resubmit video <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Payment eligibility banner */}
+      {isPaymentEligible && !isRejected && submission.status !== "paid" && (
+        <div className="card p-4 !border-emerald-200 bg-emerald-50/40 flex items-center gap-3 fade-up">
+          <div className="size-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <ShieldCheck className="size-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-emerald-800">Payment eligible</div>
+            <div className="text-sm text-emerald-700/80 mt-0.5">Your submission has been approved for UPI payout. Transfer will be initiated within 48 hours.</div>
+          </div>
+          {submission.payoutInr > 0 && (
+            <div className="text-right shrink-0">
+              <div className="text-xs text-emerald-700 font-medium">Amount</div>
+              <div className="text-lg font-black text-emerald-800">₹{submission.payoutInr.toLocaleString("en-IN")}</div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Status banner */}
       <div className={`card p-5 flex flex-wrap items-center gap-4 ${isRejected ? "!border-red-200 bg-red-50/40" : ""}`}>
@@ -100,13 +254,27 @@ function DashboardPage() {
            submission.status === "paid" ? <PartyPopper className="size-6" /> :
            <Clock className="size-6" />}
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[160px]">
           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Current status</div>
           <div className="text-xl font-bold text-tb-navy capitalize mt-0.5">{submission.status.replace(/_/g, " ")}</div>
         </div>
-        {submission.videoUrl && (
-          <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="btn-ghost text-sm">View post ↗</a>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Video approved badge */}
+          {(submission.status === "approved" || submission.status === "live" || submission.status === "milestone_reached" || submission.status === "paid") && (
+            <span className="badge badge-green text-xs">
+              <CheckCircle2 className="size-3" /> Video approved
+            </span>
+          )}
+          {/* Payment eligible badge */}
+          {isPaymentEligible && (
+            <span className="badge badge-green text-xs">
+              <ShieldCheck className="size-3" /> Payment eligible
+            </span>
+          )}
+          {submission.videoUrl && (
+            <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="btn-ghost text-sm">View post ↗</a>
+          )}
+        </div>
       </div>
 
       {/* Timeline */}
@@ -172,15 +340,23 @@ function DashboardPage() {
         <div className="card p-6 tb-gradient text-white relative overflow-hidden">
           <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white/10 blur-2xl" />
           <div className="relative">
-            <div className="badge bg-white/15 text-white border-white/20"><Wallet className="size-3.5" /> Payout</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="badge bg-white/15 text-white border-white/20"><Wallet className="size-3.5" /> Payout</div>
+              {isPaymentEligible && (
+                <div className="badge bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-xs">
+                  <CheckCircle2 className="size-3" /> Eligible
+                </div>
+              )}
+            </div>
             <div className="mt-3 text-xs text-white/70">{submission.status === "paid" ? "Sent to" : "Will be sent to"}</div>
-            <div className="font-semibold">{submission.upi || "Not added"}</div>
+            <div className="font-semibold truncate">{submission.upi || "Not added"}</div>
             <div className="mt-5 text-4xl font-bold tb-text-gradient flex items-center gap-1">
               <IndianRupee className="size-7" />{submission.payoutInr.toLocaleString("en-IN")}
             </div>
             <div className="mt-1 text-xs text-white/70">
-              {submission.status === "paid" ? "Transferred via UPI" :
+              {submission.status === "paid"              ? "Transferred via UPI" :
                submission.status === "milestone_reached" ? "Queued for transfer (within 48h)" :
+               isPaymentEligible                         ? "Transfer initiated — within 48h" :
                "Cross a milestone to unlock"}
             </div>
           </div>

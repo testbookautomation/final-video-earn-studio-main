@@ -44,7 +44,7 @@ var HEADERS = {
     "Submission ID","Submitted At","Name","Phone","UPI ID","Email",
     "Exam Category","Platform","Followers","Video Link","Caption",
     "Status","Views","Likes","Comments","Milestone Reached","Payout Amount (₹)",
-    "Payout Status","Approve","Reject","Rejection Reason","Reviewed By","Reviewed At"
+    "Payout Status","Approve","Reject","Rejection Reason","Payment Eligible","Reviewed By","Reviewed At"
   ]
 };
 
@@ -147,7 +147,7 @@ function addToReviewSheet(d) {
     d.submissionId, d.now, d.name, d.phone, d.upi, d.email,
     d.examCategory, d.platform, d.followers, d.videoLink, d.caption,
     "Under Review", 0, 0, 0, "None", 0,
-    "Pending", false, false, "", "", ""
+    "Pending", false, false, "", false, "", ""
   ]);
   // Format last added row
   var lastRow = sheet.getLastRow();
@@ -184,6 +184,8 @@ function syncReviewSheet() {
     var sid  = String(row[sCol["Submission ID"]]);
     var views = Number(row[sCol["Views"]]) || 0;
     var milestone = getMilestone(views);
+    var payoutAmount = Number(row[sCol["Payout Amount"]]) || 0;
+    var payEligible = String(row[sCol["Payout Eligibility"]]) === "Eligible";
 
     if (existing[sid]) {
       // Update status, metrics, payout in existing row
@@ -193,10 +195,14 @@ function syncReviewSheet() {
       reviewSheet.getRange(rRow, rCol["Likes"]+1).setValue(Number(row[sCol["Likes"]]) || 0);
       reviewSheet.getRange(rRow, rCol["Comments"]+1).setValue(Number(row[sCol["Comments"]]) || 0);
       reviewSheet.getRange(rRow, rCol["Milestone Reached"]+1).setValue(milestone);
-      reviewSheet.getRange(rRow, rCol["Payout Amount (₹)"]+1).setValue(Number(row[sCol["Payout Amount"]]) || 0);
+      reviewSheet.getRange(rRow, rCol["Payout Amount (₹)"]+1).setValue(payoutAmount);
       reviewSheet.getRange(rRow, rCol["Payout Status"]+1).setValue(row[sCol["Payout Status"]]);
+      reviewSheet.getRange(rRow, rCol["Rejection Reason"]+1).setValue(row[sCol["Rejection Reason"]]);
       reviewSheet.getRange(rRow, rCol["Reviewed By"]+1).setValue(row[sCol["Approved By"]]);
       reviewSheet.getRange(rRow, rCol["Reviewed At"]+1).setValue(row[sCol["Approved At"]]);
+      if (rCol["Payment Eligible"] !== undefined) {
+        reviewSheet.getRange(rRow, rCol["Payment Eligible"]+1).setValue(payEligible);
+      }
     } else {
       // New row
       var videoLink = String(row[sCol["Video Link"]] || "");
@@ -217,10 +223,11 @@ function syncReviewSheet() {
         Number(row[sCol["Likes"]]) || 0,
         Number(row[sCol["Comments"]]) || 0,
         milestone,
-        Number(row[sCol["Payout Amount"]]) || 0,
+        payoutAmount,
         row[sCol["Payout Status"]],
         false, false,
         row[sCol["Rejection Reason"]],
+        payEligible,
         row[sCol["Approved By"]],
         row[sCol["Approved At"]]
       ]);
@@ -275,40 +282,66 @@ function handleSubmissionsEdit(e, sheet) {
   setCell(sheet, rowIndex, col, "Approved By", reviewer);
   setCell(sheet, rowIndex, col, "Approved At", now);
   setCell(sheet, rowIndex, col, "Updated At",  now);
-  if (status === "Approved" && rejectCol)  sheet.getRange(rowIndex, rejectCol).setValue(false);
-  if (status === "Rejected" && approveCol) sheet.getRange(rowIndex, approveCol).setValue(false);
+  if (status === "Approved") {
+    setCell(sheet, rowIndex, col, "Payout Eligibility", "Eligible");
+    if (rejectCol) sheet.getRange(rowIndex, rejectCol).setValue(false);
+  }
+  if (status === "Rejected" && approveCol) {
+    sheet.getRange(rowIndex, approveCol).setValue(false);
+  }
 
-  // Mirror to Review & Pay
-  mirrorStatusToReview(sheet, rowIndex, col, status, now, reviewer);
+  var sid = getCellVal(sheet, rowIndex, col, "Submission ID");
+  var reason = status === "Rejected" ? getCellVal(sheet, rowIndex, col, "Rejection Reason") : "";
+  mirrorStatusToReview(sheet, rowIndex, col, status, now, reviewer, reason);
 }
 
 function handleReviewEdit(e, sheet) {
-  if (e.range.getRow() === 1 || String(e.value).toUpperCase() !== "TRUE") return;
-  var headers    = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  var col        = headerIndex(headers);
-  var editedCol  = e.range.getColumn();
-  var approveCol = col["Approve"] !== undefined ? col["Approve"] + 1 : 0;
-  var rejectCol  = col["Reject"]  !== undefined ? col["Reject"]  + 1 : 0;
-  if (editedCol !== approveCol && editedCol !== rejectCol) return;
+  if (e.range.getRow() === 1) return;
+  var headers       = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var col           = headerIndex(headers);
+  var editedCol     = e.range.getColumn();
+  var rowIndex      = e.range.getRow();
+  var now           = new Date().toISOString();
+  var reviewer      = getReviewer();
+  var newVal        = String(e.value).toUpperCase();
 
-  var rowIndex = e.range.getRow();
-  var status   = editedCol === approveCol ? "Approved" : "Rejected";
-  var now      = new Date().toISOString();
-  var reviewer = getReviewer();
+  var approveCol    = col["Approve"]          !== undefined ? col["Approve"]          + 1 : 0;
+  var rejectCol     = col["Reject"]           !== undefined ? col["Reject"]           + 1 : 0;
+  var payEligCol    = col["Payment Eligible"] !== undefined ? col["Payment Eligible"] + 1 : 0;
 
-  setCell(sheet, rowIndex, col, "Status",      status);
-  setCell(sheet, rowIndex, col, "Reviewed By", reviewer);
-  setCell(sheet, rowIndex, col, "Reviewed At", now);
-  if (status === "Approved" && rejectCol)  sheet.getRange(rowIndex, rejectCol).setValue(false);
-  if (status === "Rejected" && approveCol) sheet.getRange(rowIndex, approveCol).setValue(false);
+  if (newVal !== "TRUE") return; // only act on tick, not untick
 
-  // Mirror back to Submissions sheet
-  var sid = String(sheet.getRange(rowIndex, col["Submission ID"]+1).getValue());
-  mirrorStatusToSubmissions(sid, status, now, reviewer);
+  var sid = getCellVal(sheet, rowIndex, col, "Submission ID");
+
+  if (editedCol === approveCol) {
+    // ── Video Approved ──────────────────────────────────────
+    setCell(sheet, rowIndex, col, "Status",      "Approved");
+    setCell(sheet, rowIndex, col, "Reviewed By", reviewer);
+    setCell(sheet, rowIndex, col, "Reviewed At", now);
+    if (rejectCol) sheet.getRange(rowIndex, rejectCol).setValue(false);
+    mirrorStatusToSubmissions(sid, "Approved", now, reviewer, "", "Eligible");
+
+  } else if (editedCol === rejectCol) {
+    // ── Video Rejected ──────────────────────────────────────
+    var reason = getCellVal(sheet, rowIndex, col, "Rejection Reason");
+    setCell(sheet, rowIndex, col, "Status",      "Rejected");
+    setCell(sheet, rowIndex, col, "Reviewed By", reviewer);
+    setCell(sheet, rowIndex, col, "Reviewed At", now);
+    if (approveCol) sheet.getRange(rowIndex, approveCol).setValue(false);
+    // Clear Payment Eligible since video was rejected
+    if (payEligCol) sheet.getRange(rowIndex, payEligCol).setValue(false);
+    mirrorStatusToSubmissions(sid, "Rejected", now, reviewer, reason, "");
+
+  } else if (editedCol === payEligCol) {
+    // ── Payment Eligible ────────────────────────────────────
+    var payoutAmount = Number(getCellVal(sheet, rowIndex, col, "Payout Amount (₹)")) || 0;
+    setCell(sheet, rowIndex, col, "Payout Status", "Processing");
+    mirrorPaymentEligible(sid, payoutAmount, now);
+  }
 }
 
-function mirrorStatusToReview(subSheet, rowIndex, col, status, now, reviewer) {
-  var sid = String(subSheet.getRange(rowIndex, col["Submission ID"]+1).getValue());
+function mirrorStatusToReview(subSheet, rowIndex, col, status, now, reviewer, reason) {
+  var sid = getCellVal(subSheet, rowIndex, col, "Submission ID");
   var reviewSheet = getSpreadsheet().getSheetByName(SHEETS.REVIEW);
   if (!reviewSheet) return;
   var rows = reviewSheet.getDataRange().getValues();
@@ -318,12 +351,15 @@ function mirrorStatusToReview(subSheet, rowIndex, col, status, now, reviewer) {
       reviewSheet.getRange(i+1, rCol["Status"]+1).setValue(status);
       reviewSheet.getRange(i+1, rCol["Reviewed By"]+1).setValue(reviewer);
       reviewSheet.getRange(i+1, rCol["Reviewed At"]+1).setValue(now);
+      if (reason !== undefined && rCol["Rejection Reason"] !== undefined) {
+        reviewSheet.getRange(i+1, rCol["Rejection Reason"]+1).setValue(reason);
+      }
       break;
     }
   }
 }
 
-function mirrorStatusToSubmissions(sid, status, now, reviewer) {
+function mirrorStatusToSubmissions(sid, status, now, reviewer, rejectionReason, payoutEligibility) {
   var subSheet = getSpreadsheet().getSheetByName(SHEETS.SUBMISSIONS);
   if (!subSheet) return;
   var rows = subSheet.getDataRange().getValues();
@@ -334,6 +370,31 @@ function mirrorStatusToSubmissions(sid, status, now, reviewer) {
       setCell(subSheet, i+1, col, "Approved By", reviewer);
       setCell(subSheet, i+1, col, "Approved At", now);
       setCell(subSheet, i+1, col, "Updated At",  now);
+      if (rejectionReason !== undefined) {
+        setCell(subSheet, i+1, col, "Rejection Reason", rejectionReason);
+      }
+      if (payoutEligibility) {
+        setCell(subSheet, i+1, col, "Payout Eligibility", payoutEligibility);
+      }
+      break;
+    }
+  }
+}
+
+function mirrorPaymentEligible(sid, payoutAmount, now) {
+  var subSheet = getSpreadsheet().getSheetByName(SHEETS.SUBMISSIONS);
+  if (!subSheet) return;
+  var rows = subSheet.getDataRange().getValues();
+  var col  = headerIndex(rows[0]);
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][col["Submission ID"]]) === sid) {
+      setCell(subSheet, i+1, col, "Status",             "Milestone Reached");
+      setCell(subSheet, i+1, col, "Payout Eligibility", "Eligible");
+      if (payoutAmount > 0) {
+        setCell(subSheet, i+1, col, "Payout Amount", payoutAmount);
+      }
+      setCell(subSheet, i+1, col, "Payout Status", "Processing");
+      setCell(subSheet, i+1, col, "Updated At",    now);
       break;
     }
   }
@@ -381,15 +442,15 @@ function handleStatus(phone, userId) {
       return {
         success: true,
         submission: {
-          submissionId: row[col["Submission ID"]],
-          submittedAt:  row[col["Submitted At"]],
-          name:         row[col["Name"]],
-          phone:        row[col["Phone"]],
-          examCategory: row[col["Exam Category"]],
-          platform:     row[col["Platform"]],
-          videoLink:    row[col["Video Link"]],
-          socialHandle: row[col["Social Handle"]],
-          status:       row[col["Status"]],
+          submissionId:    row[col["Submission ID"]],
+          submittedAt:     row[col["Submitted At"]],
+          name:            row[col["Name"]],
+          phone:           row[col["Phone"]],
+          examCategory:    row[col["Exam Category"]],
+          platform:        row[col["Platform"]],
+          videoLink:       row[col["Video Link"]],
+          socialHandle:    row[col["Social Handle"]],
+          status:          row[col["Status"]],
           rejectionReason: row[col["Rejection Reason"]],
           metrics: {
             views:    Number(row[col["Views"]])    || 0,
@@ -398,11 +459,11 @@ function handleStatus(phone, userId) {
             target:   CONFIG.VIEW_TARGET
           },
           payout: {
-            upi:        row[col["UPI ID"]],
-            eligibility:row[col["Payout Eligibility"]],
-            amount:     Number(row[col["Payout Amount"]]) || 0,
-            status:     row[col["Payout Status"]],
-            razorpayId: row[col["Razorpay ID"]]
+            upi:         row[col["UPI ID"]],
+            eligibility: row[col["Payout Eligibility"]],
+            amount:      Number(row[col["Payout Amount"]]) || 0,
+            status:      row[col["Payout Status"]],
+            razorpayId:  row[col["Razorpay ID"]]
           }
         }
       };
@@ -412,6 +473,11 @@ function handleStatus(phone, userId) {
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */
+
+function getCellVal(sheet, rowIndex, col, header) {
+  if (col[header] === undefined) return "";
+  return safeStr(sheet.getRange(rowIndex, col[header]+1).getValue());
+}
 
 function upsertUser(data) {
   var sheet = getOrCreateSheet(SHEETS.USERS, HEADERS.USERS);
@@ -541,28 +607,50 @@ function setupSheets() {
   // Dropdowns on Submissions
   var subSheet = getOrCreateSheet(SHEETS.SUBMISSIONS, HEADERS.SUBMISSIONS);
   var subCol   = headerIndex(subSheet.getRange(1,1,1,subSheet.getLastColumn()).getValues()[0]);
-  applyDropdown(subSheet, subCol, "Status",             ["Under Review","Approved","Rejected"]);
+  applyDropdown(subSheet, subCol, "Status",             ["Under Review","Approved","Rejected","Live","Milestone Reached","Paid"]);
   applyDropdown(subSheet, subCol, "Payout Eligibility", ["Not Eligible","Eligible"]);
   applyDropdown(subSheet, subCol, "Payout Status",      ["Pending","Processing","Paid","Failed"]);
   applyCheckboxes(subSheet, subCol, "Approve");
   applyCheckboxes(subSheet, subCol, "Reject");
 
-  // Dropdowns on Review & Pay
+  // Dropdowns + checkboxes on Review & Pay
   var revSheet = getOrCreateSheet(SHEETS.REVIEW, HEADERS.REVIEW);
   var revCol   = headerIndex(revSheet.getRange(1,1,1,revSheet.getLastColumn()).getValues()[0]);
-  applyDropdown(revSheet, revCol, "Status",        ["Under Review","Approved","Rejected"]);
+  applyDropdown(revSheet, revCol, "Status",        ["Under Review","Approved","Rejected","Live","Milestone Reached","Paid"]);
   applyDropdown(revSheet, revCol, "Payout Status", ["Pending","Processing","Paid","Failed"]);
   applyCheckboxes(revSheet, revCol, "Approve");
   applyCheckboxes(revSheet, revCol, "Reject");
+  applyCheckboxes(revSheet, revCol, "Payment Eligible");
 
-  // Style Review & Pay columns widths
-  revSheet.setColumnWidth(revCol["Name"]+1,          160);
-  revSheet.setColumnWidth(revCol["Phone"]+1,         120);
-  revSheet.setColumnWidth(revCol["UPI ID"]+1,        180);
-  revSheet.setColumnWidth(revCol["Video Link"]+1,    100);
-  revSheet.setColumnWidth(revCol["Caption"]+1,       250);
-  revSheet.setColumnWidth(revCol["Status"]+1,        120);
-  revSheet.setColumnWidth(revCol["Payout Status"]+1, 120);
+  // Column widths on Review & Pay
+  revSheet.setColumnWidth(revCol["Name"]+1,             160);
+  revSheet.setColumnWidth(revCol["Phone"]+1,            120);
+  revSheet.setColumnWidth(revCol["UPI ID"]+1,           180);
+  revSheet.setColumnWidth(revCol["Video Link"]+1,       100);
+  revSheet.setColumnWidth(revCol["Caption"]+1,          250);
+  revSheet.setColumnWidth(revCol["Status"]+1,           130);
+  revSheet.setColumnWidth(revCol["Payout Status"]+1,    130);
+  revSheet.setColumnWidth(revCol["Rejection Reason"]+1, 220);
+  revSheet.setColumnWidth(revCol["Payment Eligible"]+1, 130);
+
+  // Conditional formatting: Approved rows → light green bg
+  var range = revSheet.getRange(2, 1, Math.max(revSheet.getMaxRows()-1,1), revSheet.getLastColumn());
+  var approvedRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$L2="Approved"')
+    .setBackground("#e6f4ea")
+    .setRanges([range])
+    .build();
+  var rejectedRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$L2="Rejected"')
+    .setBackground("#fce8e6")
+    .setRanges([range])
+    .build();
+  var payEligRule = SpreadsheetApp.newConditionalFormatRule()
+    .whenFormulaSatisfied('=$V2=TRUE')
+    .setBackground("#e8f5e9")
+    .setRanges([range])
+    .build();
+  revSheet.setConditionalFormatRules([approvedRule, rejectedRule, payEligRule]);
 
   // Install onEdit trigger once
   var triggers = ScriptApp.getProjectTriggers();

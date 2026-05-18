@@ -118,7 +118,7 @@ function SubmitPage() {
     setCdnUrl(null); // reset CDN URL if a new file is picked
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setVideoPreview(URL.createObjectURL(file));
-    track("creator.video.file_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
+    track("UGC_creators_video_file_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
   };
 
   const removeFile = () => {
@@ -160,7 +160,7 @@ function SubmitPage() {
     if (!valid || isBusy) return;
 
     setErrorMsg("");
-    track("creator.submission.submit_clicked", { page: "/submit", platform: form.platform });
+    track("UGC_creators_submission_submit_clicked", { page: "/submit", platform: form.platform });
     const submissionId = "tb_" + Math.random().toString(36).slice(2, 10);
 
     /* ── Stage 1: Upload video to LMS CDN ─────────────────── */

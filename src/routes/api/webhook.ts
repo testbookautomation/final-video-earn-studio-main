@@ -6,7 +6,7 @@
  *
  * Expected body shape:
  * {
- *   event:        string;     — e.g. "creator.submission.status_updated"
+ *   event:        string;     — e.g. "UGC_creators_submission_status_updated"
  *   timestamp:    number;     — Unix ms
  *   creatorPhone?: string;
  *   submissionId?: string;

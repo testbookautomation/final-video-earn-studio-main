@@ -33,6 +33,9 @@ export type TBSubmission = {
   caption: string;
   consent: boolean;
   status: SubmissionStatus;
+  rejectionReason?: string;
+  payoutEligibility?: string;
+  payoutStatus?: string;
   views: number;
   likes: number;
   comments: number;

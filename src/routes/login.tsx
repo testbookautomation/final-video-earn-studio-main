@@ -70,7 +70,7 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     if (!validPhone) { setError("Enter a valid 10-digit Indian mobile number."); return; }
-    track("creator.auth.otp_requested", { page: "/login", payload: { phone } });
+    track("UGC_creators_auth_otp_requested", { page: "/login", payload: { phone } });
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
@@ -115,7 +115,7 @@ function LoginPage() {
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
     setUser({ phone, loggedInAt: Date.now() });
-    track("creator.auth.login_completed", { page: "/login", payload: { phone } });
+    track("UGC_creators_auth_login_completed", { page: "/login", payload: { phone } });
     navigate({ to: "/dashboard" });
   };
 

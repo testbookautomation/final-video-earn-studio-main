@@ -10,10 +10,19 @@ type TrackOptions = {
 };
 
 const allowedEvents = new Set([
-  "creator.auth.otp_requested",
-  "creator.auth.login_completed",
-  "creator.video.file_selected",
-  "creator.submission.submit_clicked",
+  "UGC_creators_auth_otp_requested",
+  "UGC_creators_auth_login_completed",
+  "UGC_creators_video_file_selected",
+  "UGC_creators_submission_submit_clicked",
+  "UGC_creators_video_review_started",
+  "UGC_creators_video_approved",
+  "UGC_creators_video_rejected",
+  "UGC_creators_video_live",
+  "UGC_creators_video_milestone_reached",
+  "UGC_creators_payment_eligible",
+  "UGC_creators_payment_initiated",
+  "UGC_creators_payment_completed",
+  "UGC_creators_payment_failed",
 ]);
 
 export function track(eventName: string, opts: TrackOptions = {}): void {
