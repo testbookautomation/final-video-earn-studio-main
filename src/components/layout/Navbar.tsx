@@ -114,9 +114,9 @@ export function Navbar() {
                 </div>
               )}
             </div>
-          ) : (
+          ) : location.pathname !== "/login" ? (
             <Link to="/login" className="btn-primary hidden md:inline-flex">Login</Link>
-          )}
+          ) : null}
           <button
             className="md:hidden size-10 rounded-lg border border-border flex items-center justify-center"
             onClick={() => setOpen((v) => !v)}
@@ -144,9 +144,9 @@ export function Navbar() {
               >
                 Sign out
               </button>
-            ) : (
+            ) : location.pathname !== "/login" ? (
               <Link to="/login" className="btn-primary mt-2 text-sm">Login to Creator Lab</Link>
-            )}
+            ) : null}
           </div>
         </div>
       )}

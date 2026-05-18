@@ -295,80 +295,118 @@ function LoginPage() {
     <div className="min-h-[calc(100vh-64px)] flex">
       {/* ── Left brand panel (desktop only) ── */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] tb-gradient relative overflow-hidden flex-col justify-between p-12">
-        {/* dot grid */}
-        <div className="absolute inset-0 dot-grid opacity-25" />
-        {/* glow orbs */}
-        <div className="absolute -top-24 -left-24 size-80 rounded-full bg-blue-500/20 blur-3xl" />
-        <div className="absolute bottom-0 right-0 size-96 rounded-full bg-indigo-700/20 blur-3xl" />
+        {/* Background layers */}
+        <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="absolute -top-32 -left-32 size-96 rounded-full bg-blue-400/25 blur-3xl" />
+        <div className="absolute top-1/2 -right-20 size-72 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-violet-600/15 blur-3xl" />
+        {/* Diagonal shimmer stripe */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
 
-        <div className="relative">
-          <img
-            src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
-            alt="Testbook"
-            className="h-8 w-auto"
-          />
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/50">
-            Creator Lab
+        {/* ── Top: logo + live badge ── */}
+        <div className="relative flex items-start justify-between">
+          <div>
+            <img
+              src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
+              alt="Testbook"
+              className="h-8 w-auto"
+            />
+            <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/40">
+              Creator Lab
+            </div>
+          </div>
+          {/* Live badge */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+            <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] font-semibold text-white/80 tracking-wide">LIVE PROGRAM</span>
           </div>
         </div>
 
-        <div className="relative space-y-8">
+        {/* ── Middle: headline + perks + stats ── */}
+        <div className="relative space-y-7">
+          {/* Announcement pill */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-white/80 font-medium backdrop-blur-sm w-fit">
+            <Sparkles className="size-3.5 text-yellow-300" />
+            ₹4.2 Crore paid out to creators so far
+          </div>
+
           <div>
-            <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight">
+            <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.15] tracking-tight">
               Create the video.
               <br />
               Send it to Testbook.
               <br />
-              <span className="tb-text-gradient">Get paid in UPI.</span>
+              <span className="relative inline-block">
+                <span className="tb-text-gradient">Get paid in UPI.</span>
+                {/* underline accent */}
+                <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-gradient-to-r from-blue-300/60 to-transparent" />
+              </span>
             </h2>
-            <p className="mt-4 text-white/70 text-base max-w-sm leading-relaxed">
-              Upload your finished file to Creator Lab. Testbook publishes
-              approved videos and tracks real view milestones.
+            <p className="mt-5 text-white/65 text-sm max-w-sm leading-relaxed">
+              Upload your finished file to Creator Lab — Testbook publishes approved videos and pays you when milestones are hit.
             </p>
           </div>
 
-          <ul className="space-y-3">
-            {perks.map((p) => (
-              <li
+          {/* Perks as pills */}
+          <div className="space-y-2.5">
+            {perks.map((p, i) => (
+              <div
                 key={p}
-                className="flex items-start gap-3 text-sm text-white/85"
+                className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm"
               >
-                <CheckCircle2 className="size-4 text-emerald-400 mt-0.5 shrink-0" />
-                {p}
-              </li>
+                <div className="size-5 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-black text-emerald-300">{i + 1}</span>
+                </div>
+                <span className="text-sm text-white/85 font-medium">{p}</span>
+              </div>
             ))}
-          </ul>
+          </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-2.5">
             {stats.map(({ Icon, k, v }) => (
-              <div key={k} className="glass p-4 rounded-2xl text-center">
-                <Icon className="size-4 text-tb-blue-light mx-auto" />
-                <div className="mt-2 text-xl font-black text-white">{k}</div>
-                <div className="text-[10px] text-white/60 mt-0.5">{v}</div>
+              <div
+                key={k}
+                className="rounded-2xl border border-white/15 bg-white/8 backdrop-blur-sm p-4 text-center hover:bg-white/12 transition-colors"
+              >
+                <div className="size-8 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
+                  <Icon className="size-4 text-blue-200" />
+                </div>
+                <div className="text-xl font-black text-white">{k}</div>
+                <div className="text-[10px] text-white/50 mt-0.5 uppercase tracking-wide">{v}</div>
               </div>
             ))}
           </div>
         </div>
 
+        {/* ── Bottom: testimonial card ── */}
         <div className="relative">
-          <div className="glass rounded-2xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
-                P
+          {/* Stars row */}
+          <div className="flex items-center gap-0.5 mb-2 ml-1">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="size-3.5 fill-yellow-400 text-yellow-400" />
+            ))}
+            <span className="ml-1.5 text-[11px] text-white/50 font-medium">Creator review</span>
+          </div>
+          <div className="rounded-2xl border border-white/15 bg-white/8 backdrop-blur-md p-4">
+            <p className="text-sm text-white/85 italic leading-relaxed">
+              "Uploaded my first video on a Monday. Testbook approved it by Wednesday and UPI hit on Friday."
+            </p>
+            <div className="mt-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-black text-sm shadow-lg">
+                  P
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-white leading-tight">Priya S.</div>
+                  <div className="text-[11px] text-white/50">SSC CGL aspirant</div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm font-semibold text-white">
-                  Priya S. · SSC CGL
-                </div>
-                <div className="text-xs text-white/60">
-                  6.2L views · Earned ₹18,400
-                </div>
+              <div className="text-right">
+                <div className="text-sm font-black text-emerald-300">₹18,400</div>
+                <div className="text-[10px] text-white/40">6.2L views</div>
               </div>
             </div>
-            <p className="mt-3 text-sm text-white/80 italic leading-relaxed">
-              "Uploaded my first video on a Monday. Testbook approved it by
-              Wednesday and UPI hit on Friday."
-            </p>
           </div>
         </div>
       </div>
