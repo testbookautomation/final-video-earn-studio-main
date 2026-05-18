@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxuNR_1514Gi0RRcgUHKrt-HMbIDwDn56CADZPskqk8OkDpzqSbGeE44UIgH-w5t9y1_g/exec";
+  "https://script.google.com/macros/s/AKfycbxZYAtoN5XuHCgzBVEJnnWe10Dl5KPWReowxOfiS-XbZR1MMAa0DMmlvAOqt0XMfDo0fw/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 

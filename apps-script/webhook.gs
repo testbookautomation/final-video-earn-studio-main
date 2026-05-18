@@ -66,9 +66,10 @@ function doGet(e) {
   try {
     var p = (e && e.parameter) ? e.parameter : {};
     if (!verifyToken(p.token)) return json({ success: false, error: "Unauthorized" });
-    if (p.type === "ping")   return json({ success: true, message: "OK", timestamp: new Date().toISOString() });
-    if (p.type === "status") return json(handleStatus(p.phone, p.userId));
-    if (p.type === "debug")  return json(handleDebug());
+    if (p.type === "ping")        return json({ success: true, message: "OK", timestamp: new Date().toISOString() });
+    if (p.type === "status")      return json(handleStatus(p.phone, p.userId, p.submissionId));
+    if (p.type === "sync-review") return json(handleSyncReview());
+    if (p.type === "debug")       return json(handleDebug());
     return json({ success: false, error: "Unknown type" });
   } catch (err) {
     return json({ success: false, error: String(err) });
@@ -184,7 +185,7 @@ function syncReviewSheet() {
     var sid  = String(row[sCol["Submission ID"]]);
     var views = Number(row[sCol["Views"]]) || 0;
     var milestone = getMilestone(views);
-    var payoutAmount = Number(row[sCol["Payout Amount"]]) || 0;
+    var payoutAmount = Number(row[sCol["Payout Amount"]]) || getPayoutAmount(views);
     var payEligible = String(row[sCol["Payout Eligibility"]]) === "Eligible";
 
     if (existing[sid]) {
@@ -247,6 +248,17 @@ function getMilestone(views) {
   if (views >= 50000)   return "50K — ₹2,500";
   if (views >= 10000)   return "10K — ₹500";
   return "None";
+}
+
+function getPayoutAmount(views) {
+  var n = Number(views) || 0;
+  var amount = 0;
+  if (n >= 10000)   amount += 500;
+  if (n >= 50000)   amount += 2500;
+  if (n >= 100000)  amount += 6000;
+  if (n >= 500000)  amount += 15000;
+  if (n >= 1000000) amount += 25000;
+  return amount;
 }
 
 /* ── onEdit: handle Review & Pay checkboxes ────────────────── */
@@ -334,7 +346,9 @@ function handleReviewEdit(e, sheet) {
 
   } else if (editedCol === payEligCol) {
     // ── Payment Eligible ────────────────────────────────────
-    var payoutAmount = Number(getCellVal(sheet, rowIndex, col, "Payout Amount (₹)")) || 0;
+    var views = Number(getCellVal(sheet, rowIndex, col, "Views")) || 0;
+    var payoutAmount = Number(getCellVal(sheet, rowIndex, col, "Payout Amount (₹)")) || getPayoutAmount(views);
+    setCell(sheet, rowIndex, col, "Payout Amount (₹)", payoutAmount);
     setCell(sheet, rowIndex, col, "Payout Status", "Processing");
     mirrorPaymentEligible(sid, payoutAmount, now);
   }
@@ -423,10 +437,11 @@ function handleEvent(data) {
 
 /* ── Status ────────────────────────────────────────────────── */
 
-function handleStatus(phone, userId) {
+function handleStatus(phone, userId, submissionId) {
+  var nSid    = safeStr(submissionId);
   var nPhone  = normalizePhone(phone);
   var nUserId = safeStr(userId);
-  if (!nPhone && !nUserId) return { success: false, error: "phone or userId required" };
+  if (!nSid && !nPhone && !nUserId) return { success: false, error: "submissionId, phone, or userId required" };
 
   var ss = getSpreadsheet();
 
@@ -439,15 +454,18 @@ function handleStatus(phone, userId) {
       var rCol = headerIndex(rRows[0]);
       for (var ri = rRows.length - 1; ri >= 1; ri--) {
         var rRow   = rRows[ri];
+        var rSid   = safeStr(rRow[rCol["Submission ID"]]);
         var rPhone = normalizePhone(String(rRow[rCol["Phone"]] || ""));
-        if (!nPhone || rPhone !== nPhone) continue;
+        // Match by submissionId first, fall back to phone
+        var matched = (nSid && rSid === nSid) || (!nSid && nPhone && rPhone === nPhone);
+        if (!matched) continue;
 
         var rStatus      = safeStr(rRow[rCol["Status"]]);
         var rReason      = safeStr(rRow[rCol["Rejection Reason"]]);
         var rPayElig     = rRow[rCol["Payment Eligible"]] === true;
-        var rPayAmt      = Number(rRow[rCol["Payout Amount (₹)"]]) || 0;
         var rPayStatus   = safeStr(rRow[rCol["Payout Status"]]);
         var rViews       = Number(rRow[rCol["Views"]])    || 0;
+        var rPayAmt      = Number(rRow[rCol["Payout Amount (₹)"]]) || getPayoutAmount(rViews);
         var rLikes       = Number(rRow[rCol["Likes"]])    || 0;
         var rComments    = Number(rRow[rCol["Comments"]]) || 0;
         var rUpi         = safeStr(rRow[rCol["UPI ID"]]);
@@ -484,9 +502,11 @@ function handleStatus(phone, userId) {
 
   for (var i = rows.length - 1; i >= 1; i--) {
     var row      = rows[i];
+    var rowSid   = safeStr(row[col["Submission ID"]]);
     var rowPhone = normalizePhone(String(row[col["Phone"]] || ""));
     var rowUser  = safeStr(row[col["User ID"]]);
-    if ((nPhone && rowPhone === nPhone) || (nUserId && rowUser === nUserId)) {
+    if ((nSid && rowSid === nSid) || (nPhone && rowPhone === nPhone) || (nUserId && rowUser === nUserId)) {
+      var views = Number(row[col["Views"]]) || 0;
       return {
         success: true,
         submission: {
@@ -494,7 +514,7 @@ function handleStatus(phone, userId) {
           status:          row[col["Status"]],
           rejectionReason: row[col["Rejection Reason"]],
           metrics: {
-            views:    Number(row[col["Views"]])    || 0,
+            views:    views,
             likes:    Number(row[col["Likes"]])    || 0,
             comments: Number(row[col["Comments"]]) || 0,
             target:   CONFIG.VIEW_TARGET
@@ -502,7 +522,7 @@ function handleStatus(phone, userId) {
           payout: {
             upi:         row[col["UPI ID"]],
             eligibility: row[col["Payout Eligibility"]],
-            amount:      Number(row[col["Payout Amount"]]) || 0,
+            amount:      Number(row[col["Payout Amount"]]) || getPayoutAmount(views),
             status:      row[col["Payout Status"]],
             razorpayId:  row[col["Razorpay ID"]]
           }
@@ -511,6 +531,17 @@ function handleStatus(phone, userId) {
     }
   }
   return { success: true, submission: null };
+}
+
+function handleSyncReview() {
+  try {
+    syncReviewSheet();
+    var reviewSheet = getSpreadsheet().getSheetByName(SHEETS.REVIEW);
+    var count = reviewSheet ? Math.max(reviewSheet.getLastRow() - 1, 0) : 0;
+    return { success: true, message: "Sync complete", rows: count };
+  } catch (err) {
+    return { success: false, error: String(err) };
+  }
 }
 
 /* ── Helpers ───────────────────────────────────────────────── */

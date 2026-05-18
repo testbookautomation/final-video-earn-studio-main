@@ -38,6 +38,14 @@ const platforms = [
   { id: "facebook",  label: "Facebook Reel",  Icon: Facebook,  followerLabel: "Facebook followers" },
 ] as const;
 
+const payoutRules = [
+  { views: "10,000", amount: "₹500" },
+  { views: "50,000", amount: "₹2,500" },
+  { views: "1 Lakh", amount: "₹6,000" },
+  { views: "5 Lakh", amount: "₹15,000" },
+  { views: "10 Lakh", amount: "₹25,000" },
+];
+
 type UpiState = { loading: boolean; upi: string | null; error: string | null };
 
 // Two-stage submit pipeline stages
@@ -669,13 +677,31 @@ function SubmitPage() {
             </div>
 
             <div ref={termsScrollRef} className="overflow-y-auto flex-1 px-6 py-5 space-y-5 text-sm text-foreground/80 leading-relaxed">
+              <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-4">
+                <div className="flex items-center gap-2 font-bold text-tb-navy">
+                  <Wallet className="size-4 text-tb-orange" />
+                  Video payout rules
+                </div>
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {payoutRules.map((rule) => (
+                    <div key={rule.views} className="rounded-lg border border-orange-100 bg-white px-3 py-2">
+                      <div className="text-[11px] font-semibold text-muted-foreground">Views</div>
+                      <div className="text-sm font-bold text-tb-navy">{rule.views}</div>
+                      <div className="mt-1 text-sm font-black text-tb-orange">{rule.amount}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                  Payouts are cumulative. Example: 1 Lakh views earns ₹500 + ₹2,500 + ₹6,000 = ₹9,000 total. Payout is processed after review, eligibility confirmation, and valid UPI details.
+                </p>
+              </div>
               {[
                 { t: "1. Overview", b: "These Terms & Conditions govern your participation in the Testbook Creators Lab campaign, operated by Testbook.com. By submitting a video through the Creators Lab portal, you agree to be bound by these terms in their entirety." },
                 { t: "2. Eligibility", b: "You must be a registered Testbook user with a valid phone number. Testbook employees and their immediate family members are not eligible." },
                 { t: "3. Campaign Participation", b: "Each participant may submit one (1) video per campaign cycle. All videos must be uploaded directly through the portal. Testbook may modify or discontinue any campaign at any time without prior notice." },
                 { t: "4. Review & Approval", b: "All submissions are subject to review. The review process typically takes 24–48 hours. Testbook reserves sole discretion to approve or reject any submission." },
                 { t: "5. Ownership & Intellectual Property", b: "By submitting, you irrevocably transfer all rights, title, and interest in the video to Testbook.com, including copyright and distribution rights. Testbook may use your name, likeness, and voice for promotional purposes." },
-                { t: "6. Payouts", b: "Payouts are processed within 5–7 working days to the UPI ID linked to your Testbook account. Payout amounts are indicative and do not constitute a guarantee. Testbook is not responsible for failed payments due to incorrect UPI details." },
+                { t: "6. Payouts", b: "Payouts follow the cumulative view milestones shown above and are processed to the UPI ID linked to your Testbook account after review and eligibility confirmation. Testbook is not responsible for failed payments due to incorrect UPI details." },
                 { t: "7. Prohibited Conduct", b: "Strictly prohibited: submitting non-original content, fabricating information, manipulating view counts, using bots, abusive behaviour, or deleting your video before payout is complete." },
                 { t: "8. Privacy & Data", b: "By participating, you consent to Testbook collecting and processing your personal information (name, phone, email, UPI, video) for campaign administration and promotional use, per the Testbook Privacy Policy." },
                 { t: "9. Disclaimers", b: "Testbook makes no guarantee regarding views or reach. Testbook is not liable for technical issues or portal downtime. Testbook may remove any video at any time without notice." },

@@ -28,6 +28,14 @@ const milestones = [
   { v: 1000000, label: "10L",  pay: 25000 },
 ];
 
+const FIRST_PAYOUT_VIEWS = milestones[0]?.v ?? 10000;
+
+function earnedPayoutInr(views: number): number {
+  return milestones
+    .filter((milestone) => views >= milestone.v)
+    .reduce((total, milestone) => total + milestone.pay, 0);
+}
+
 const timeline: { key: SubmissionStatus; label: string; desc: string }[] = [
   { key: "submitted",         label: "Submitted",        desc: "Video received" },
   { key: "under_review",      label: "Under review",     desc: "Team is verifying" },
@@ -59,6 +67,34 @@ function isEligible(value?: string): boolean {
 
 function normalizedPayoutStatus(value?: string): string {
   return (value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function isPaidPayoutStatus(value?: string): boolean {
+  return ["paid", "completed", "success"].includes(normalizedPayoutStatus(value));
+}
+
+function isQueuedPayoutStatus(value?: string): boolean {
+  return ["initiated", "processing", "queued", "pending"].includes(normalizedPayoutStatus(value));
+}
+
+function effectiveStatus(submission: Pick<TBSubmission, "status" | "views" | "payoutEligibility" | "payoutStatus">): SubmissionStatus {
+  if (submission.status === "rejected") return "rejected";
+  if (submission.status === "paid" || isPaidPayoutStatus(submission.payoutStatus)) return "paid";
+  if (
+    submission.status === "milestone_reached" ||
+    isEligible(submission.payoutEligibility) ||
+    isQueuedPayoutStatus(submission.payoutStatus) ||
+    ((submission.status === "approved" || submission.status === "live") && submission.views >= FIRST_PAYOUT_VIEWS)
+  ) {
+    return "milestone_reached";
+  }
+  if (submission.status === "live" || (submission.status === "approved" && submission.views > 0)) return "live";
+  return submission.status;
+}
+
+function displayPayoutInr(submission: Pick<TBSubmission, "status" | "views" | "payoutInr">): number {
+  if (submission.status === "rejected") return 0;
+  return Math.max(submission.payoutInr || 0, earnedPayoutInr(submission.views));
 }
 
 function statusEventName(status?: SubmissionStatus): string | null {
@@ -106,8 +142,9 @@ function statusClasses(status: SubmissionStatus): string {
 
 function paymentLabel(submission: TBSubmission): string {
   if (submission.payoutStatus) return submission.payoutStatus.replace(/_/g, " ");
-  if (submission.status === "paid") return "Paid";
-  if (isEligible(submission.payoutEligibility) || submission.status === "milestone_reached") return "Eligible";
+  const status = effectiveStatus(submission);
+  if (status === "paid") return "Paid";
+  if (isEligible(submission.payoutEligibility) || status === "milestone_reached") return "Eligible";
   return "Not eligible yet";
 }
 
@@ -147,7 +184,9 @@ function DashboardPage() {
       if (cur && TERMINAL.includes(cur.status)) return;
       if (isFirstLoad) setSyncing(true);
 
-      fetch(`/api/sync-status?phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`)
+      const submissionId = getSubmission()?.id ?? "";
+      const syncUrl = `/api/sync-status?submissionId=${encodeURIComponent(submissionId)}&phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`;
+      fetch(syncUrl)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
@@ -161,7 +200,7 @@ function DashboardPage() {
           if (!data.found) return;
           const current = getSubmission();
           if (!current) return;
-          const updated: TBSubmission = {
+          const synced: TBSubmission = {
             ...current,
             status:            data.status ?? current.status,
             rejectionReason:   data.rejectionReason ?? current.rejectionReason,
@@ -172,6 +211,11 @@ function DashboardPage() {
             comments:          data.comments ?? current.comments,
             payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : current.payoutInr,
             upi:               data.upi && data.upi.length > 2 ? data.upi : current.upi,
+          };
+          const updated: TBSubmission = {
+            ...synced,
+            payoutInr: displayPayoutInr(synced),
+            status: effectiveStatus(synced),
           };
           if (JSON.stringify(updated) !== JSON.stringify(current)) {
             const payload = {
@@ -218,9 +262,11 @@ function DashboardPage() {
     return <EmptyState phone={phone} />;
   }
 
-  const stage = order.indexOf(submission.status);
-  const isRejected = submission.status === "rejected";
-  const isPaymentEligible = isEligible(submission.payoutEligibility) || submission.status === "milestone_reached" || submission.status === "paid";
+  const displayStatus = effectiveStatus(submission);
+  const earnedAmount = displayPayoutInr(submission);
+  const stage = order.indexOf(displayStatus);
+  const isRejected = displayStatus === "rejected";
+  const isPaymentEligible = isEligible(submission.payoutEligibility) || displayStatus === "milestone_reached" || displayStatus === "paid";
   const nextMilestone = milestones.find((m) => m.v > submission.views);
   const lastMilestone = [...milestones].reverse().find((m) => m.v <= submission.views);
   const progressPct = nextMilestone
@@ -229,18 +275,28 @@ function DashboardPage() {
 
   return (
     <section className="mx-auto max-w-6xl px-4 sm:px-6 py-10 md:py-14 space-y-6">
-      <div className="fade-up">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
-          {syncing && <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1"><RefreshCw className="size-3 animate-spin" /> Syncing…</span>}
-          {syncError && !syncing && (
-            <span className="text-xs text-amber-600 flex items-center gap-1">
-              <AlertCircle className="size-3" /> {syncError}
-            </span>
-          )}
+      <div className="fade-up flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
+            {syncing && <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1"><RefreshCw className="size-3 animate-spin" /> Syncing…</span>}
+            {syncError && !syncing && (
+              <span className="text-xs text-amber-600 flex items-center gap-1">
+                <AlertCircle className="size-3" /> {syncError}
+              </span>
+            )}
+          </div>
+          <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
+          <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>
         </div>
-        <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
-        <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>
+        <Link
+          to="/submit"
+          className="btn-orange inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm sm:w-auto md:mt-1"
+        >
+          <Send className="size-4" />
+          Submit another video
+          <ArrowRight className="size-4" />
+        </Link>
       </div>
 
       {/* Rejection reason banner */}
@@ -258,7 +314,7 @@ function DashboardPage() {
       )}
 
       {/* Payment eligibility banner */}
-      {isPaymentEligible && !isRejected && submission.status !== "paid" && (
+      {isPaymentEligible && !isRejected && displayStatus !== "paid" && (
         <div className="card p-4 !border-emerald-200 bg-emerald-50/40 flex items-center gap-3 fade-up">
           <div className="size-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
             <ShieldCheck className="size-5" />
@@ -267,10 +323,10 @@ function DashboardPage() {
             <div className="text-sm font-bold text-emerald-800">Payment eligible</div>
             <div className="text-sm text-emerald-700/80 mt-0.5">Your submission has been approved for UPI payout. Transfer will be initiated within 48 hours.</div>
           </div>
-          {submission.payoutInr > 0 && (
+          {earnedAmount > 0 && (
             <div className="text-right shrink-0">
               <div className="text-xs text-emerald-700 font-medium">Amount</div>
-              <div className="text-lg font-black text-emerald-800">₹{submission.payoutInr.toLocaleString("en-IN")}</div>
+              <div className="text-lg font-black text-emerald-800">₹{earnedAmount.toLocaleString("en-IN")}</div>
             </div>
           )}
         </div>
@@ -280,20 +336,20 @@ function DashboardPage() {
       <div className={`card p-5 flex flex-wrap items-center gap-4 ${isRejected ? "!border-red-200 bg-red-50/40" : ""}`}>
         <div className={`size-12 rounded-xl flex items-center justify-center shrink-0 ${
           isRejected ? "bg-red-100 text-red-700" :
-          submission.status === "paid" ? "bg-emerald-100 text-emerald-700" :
+          displayStatus === "paid" ? "bg-emerald-100 text-emerald-700" :
           "tb-gradient text-white"
         }`}>
           {isRejected ? <AlertCircle className="size-6" /> :
-           submission.status === "paid" ? <PartyPopper className="size-6" /> :
+           displayStatus === "paid" ? <PartyPopper className="size-6" /> :
            <Clock className="size-6" />}
         </div>
         <div className="flex-1 min-w-[160px]">
           <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Current status</div>
-          <div className="text-xl font-bold text-tb-navy capitalize mt-0.5">{submission.status.replace(/_/g, " ")}</div>
+          <div className="text-xl font-bold text-tb-navy capitalize mt-0.5">{displayStatus.replace(/_/g, " ")}</div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Video approved badge */}
-          {(submission.status === "approved" || submission.status === "live" || submission.status === "milestone_reached" || submission.status === "paid") && (
+          {(displayStatus === "approved" || displayStatus === "live" || displayStatus === "milestone_reached" || displayStatus === "paid") && (
             <span className="badge badge-green text-xs">
               <CheckCircle2 className="size-3" /> Video approved
             </span>
@@ -381,14 +437,14 @@ function DashboardPage() {
                 </div>
               )}
             </div>
-            <div className="mt-3 text-xs text-white/70">{submission.status === "paid" ? "Sent to" : "Will be sent to"}</div>
+            <div className="mt-3 text-xs text-white/70">{displayStatus === "paid" ? "Sent to" : "Will be sent to"}</div>
             <div className="font-semibold truncate">{submission.upi || "Not added"}</div>
             <div className="mt-5 text-4xl font-bold tb-text-gradient flex items-center gap-1">
-              <IndianRupee className="size-7" />{submission.payoutInr.toLocaleString("en-IN")}
+              <IndianRupee className="size-7" />{earnedAmount.toLocaleString("en-IN")}
             </div>
             <div className="mt-1 text-xs text-white/70">
-              {submission.status === "paid"              ? "Transferred via UPI" :
-               submission.status === "milestone_reached" ? "Queued for transfer (within 48h)" :
+              {displayStatus === "paid"              ? "Transferred via UPI" :
+               displayStatus === "milestone_reached" ? "Queued for transfer (within 48h)" :
                isPaymentEligible                         ? "Transfer initiated — within 48h" :
                "Cross a milestone to unlock"}
             </div>
@@ -454,10 +510,52 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
             </tr>
           </thead>
           <tbody>
-            {submissions.map((item) => (
-              <tr key={item.id} className="border-b border-border/70 last:border-0">
-                <td className="py-4 pr-4">
-                  <div className="font-semibold text-tb-navy truncate max-w-[280px]">
+            {submissions.map((item) => {
+              const itemStatus = effectiveStatus(item);
+              const itemAmount = displayPayoutInr(item);
+              return (
+                <tr key={item.id} className="border-b border-border/70 last:border-0">
+                  <td className="py-4 pr-4">
+                    <div className="font-semibold text-tb-navy truncate max-w-[280px]">
+                      {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
+                    </div>
+                    <a
+                      href={item.cdnUrl || item.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
+                    >
+                      Open video <ExternalLink className="size-3" />
+                    </a>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className={`badge text-xs capitalize ${statusClasses(itemStatus)}`}>
+                      {itemStatus.replace(/_/g, " ")}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="font-medium text-tb-navy capitalize">{paymentLabel(item)}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{item.upi || "UPI not added"}</div>
+                  </td>
+                  <td className="py-4 pl-4 text-right font-black text-tb-navy">
+                    ₹{itemAmount.toLocaleString("en-IN")}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="md:hidden space-y-3">
+        {submissions.map((item) => {
+          const itemStatus = effectiveStatus(item);
+          const itemAmount = displayPayoutInr(item);
+          return (
+            <div key={item.id} className="rounded-xl border border-border p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-semibold text-tb-navy truncate">
                     {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
                   </div>
                   <a
@@ -468,58 +566,24 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
                   >
                     Open video <ExternalLink className="size-3" />
                   </a>
-                </td>
-                <td className="py-4 px-4">
-                  <span className={`badge text-xs capitalize ${statusClasses(item.status)}`}>
-                    {item.status.replace(/_/g, " ")}
-                  </span>
-                </td>
-                <td className="py-4 px-4">
-                  <div className="font-medium text-tb-navy capitalize">{paymentLabel(item)}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">{item.upi || "UPI not added"}</div>
-                </td>
-                <td className="py-4 pl-4 text-right font-black text-tb-navy">
-                  ₹{item.payoutInr.toLocaleString("en-IN")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="md:hidden space-y-3">
-        {submissions.map((item) => (
-          <div key={item.id} className="rounded-xl border border-border p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="font-semibold text-tb-navy truncate">
-                  {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
                 </div>
-                <a
-                  href={item.cdnUrl || item.videoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
-                >
-                  Open video <ExternalLink className="size-3" />
-                </a>
+                <span className={`badge text-xs capitalize shrink-0 ${statusClasses(itemStatus)}`}>
+                  {itemStatus.replace(/_/g, " ")}
+                </span>
               </div>
-              <span className={`badge text-xs capitalize shrink-0 ${statusClasses(item.status)}`}>
-                {item.status.replace(/_/g, " ")}
-              </span>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <div className="text-xs text-muted-foreground">Payment</div>
-                <div className="font-semibold text-tb-navy capitalize">{paymentLabel(item)}</div>
-              </div>
-              <div className="text-right">
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">Payment</div>
+                  <div className="font-semibold text-tb-navy capitalize">{paymentLabel(item)}</div>
+                </div>
+                <div className="text-right">
                 <div className="text-xs text-muted-foreground">Amount</div>
-                <div className="font-black text-tb-navy">₹{item.payoutInr.toLocaleString("en-IN")}</div>
+                <div className="font-black text-tb-navy">₹{itemAmount.toLocaleString("en-IN")}</div>
+              </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

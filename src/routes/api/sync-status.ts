@@ -26,22 +26,24 @@ export const Route = createFileRoute("/api/sync-status")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const url    = new URL(request.url);
-        const phone  = (url.searchParams.get("phone")  ?? "").replace(/\D/g, "").slice(-10);
-        const userId = (url.searchParams.get("userId") ?? "").trim();
+        const url          = new URL(request.url);
+        const phone        = (url.searchParams.get("phone")        ?? "").replace(/\D/g, "").slice(-10);
+        const userId       = (url.searchParams.get("userId")       ?? "").trim();
+        const submissionId = (url.searchParams.get("submissionId") ?? "").trim();
 
-        if (!phone && !userId) {
-          return new Response(JSON.stringify({ ok: false, error: "phone or userId required" }), {
+        if (!submissionId && !phone && !userId) {
+          return new Response(JSON.stringify({ ok: false, error: "submissionId, phone or userId required" }), {
             status: 400, headers: { "Content-Type": "application/json" },
           });
         }
 
         try {
           const qs = new URLSearchParams({
-            type:   "status",
-            token:  TOKEN,
-            ...(phone  ? { phone }  : {}),
-            ...(userId ? { userId } : {}),
+            type:  "status",
+            token: TOKEN,
+            ...(submissionId ? { submissionId } : {}),
+            ...(phone        ? { phone }        : {}),
+            ...(userId       ? { userId }       : {}),
           });
           const res = await fetch(
             `${APPS_SCRIPT_URL}?${qs.toString()}`,
