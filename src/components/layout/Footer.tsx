@@ -9,10 +9,10 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <div className="text-lg font-bold">Ready to start earning?</div>
-            <div className="text-sm text-white/60 mt-0.5">Submit your first video — approval in 24 hours.</div>
+            <div className="text-sm text-white/60 mt-0.5">Send your first video to Testbook. Approval in 24 hours.</div>
           </div>
           <Link to="/submit" className="btn-orange shrink-0">
-            Submit your video <ArrowRight className="size-4" />
+            Send your video <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>
@@ -23,15 +23,15 @@ export function Footer() {
         <div className="sm:col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5">
             <img
-              src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+              src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
               alt="Testbook"
-              className="h-7 w-auto brightness-0 invert"
+              className="h-7 w-auto"
             />
             <div className="h-4 w-px bg-white/20" />
             <span className="text-[11px] font-bold uppercase tracking-widest text-white/60">Creator Lab</span>
           </div>
           <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-[220px]">
-            India's largest exam-prep platform. Earn UPI payouts by promoting Testbook Pass.
+            India's largest exam-prep platform. Earn UPI payouts by creating videos Testbook can publish.
           </p>
           <div className="mt-5 flex items-center gap-2">
             <a
@@ -58,7 +58,7 @@ export function Footer() {
             {[
               { to: "/", label: "How it works" },
               { to: "/sop", label: "Creator SOP" },
-              { to: "/submit", label: "Submit a video" },
+              { to: "/submit", label: "Send a video" },
               { to: "/dashboard", label: "My dashboard" },
             ].map(({ to, label }) => (
               <li key={to}>

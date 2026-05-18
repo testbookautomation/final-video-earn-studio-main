@@ -46,11 +46,12 @@ type AuthApiResponse = {
   message?: string;
   userId?: string;
   studentId?: string;
+  name?: string;
 };
 
 const perks = [
-  "Record a 30–60s reel on your exam journey",
-  "Submit to Creator Lab in under 5 minutes",
+  "Create a 30–60s video on your exam journey",
+  "Upload the final file to Testbook in under 5 minutes",
   "Earn ₹500 – ₹25,000 directly to your UPI",
 ];
 
@@ -248,10 +249,10 @@ function LoginPage() {
       });
       const data = await readAuthResponse(res);
       const userId = data.userId || data.studentId || resolvedUserId();
-      setUser({ phone, userId, loggedInAt: Date.now() });
+      setUser({ phone, userId, name: data.name, loggedInAt: Date.now() });
       track("UGC_creators_auth_login_completed", {
         page: "/login",
-        payload: { phone, userId },
+        payload: { phone, userId, hasName: !!data.name },
       });
       navigate({ to: "/dashboard" });
     } catch (err) {
@@ -299,9 +300,9 @@ function LoginPage() {
 
         <div className="relative">
           <img
-            src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+            src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
             alt="Testbook"
-            className="h-8 w-auto brightness-0 invert"
+            className="h-8 w-auto"
           />
           <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/50">
             Creator Lab
@@ -311,13 +312,15 @@ function LoginPage() {
         <div className="relative space-y-8">
           <div>
             <h2 className="text-4xl xl:text-5xl font-black text-white leading-tight">
-              Make a reel.
+              Create the video.
+              <br />
+              Send it to Testbook.
               <br />
               <span className="tb-text-gradient">Get paid in UPI.</span>
             </h2>
             <p className="mt-4 text-white/70 text-base max-w-sm leading-relaxed">
-              Join India's largest student creator campaign — earn ₹500 to
-              ₹25,000 per video based on real view milestones.
+              Upload your finished file to Creator Lab. Testbook publishes
+              approved videos and tracks real view milestones.
             </p>
           </div>
 
@@ -360,8 +363,8 @@ function LoginPage() {
               </div>
             </div>
             <p className="mt-3 text-sm text-white/80 italic leading-relaxed">
-              "Submitted my first reel on a Monday — got approved by Wednesday.
-              UPI hit on Friday. Easiest ₹6,000 I've made."
+              "Uploaded my first video on a Monday. Testbook approved it by
+              Wednesday and UPI hit on Friday."
             </p>
           </div>
         </div>

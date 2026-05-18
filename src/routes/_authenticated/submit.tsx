@@ -2,11 +2,11 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, Wallet, CheckCircle2, AlertCircle, Loader2,
-  Instagram, Youtube, Facebook, ExternalLink, Upload,
+  Instagram, Youtube, ExternalLink, Upload,
   X, Film, Users, Star, ScrollText, ChevronRight,
   CloudUpload, Send, RefreshCw,
 } from "lucide-react";
-import { getOrCreateUserSession, getUser, saveSubmission, type TBSubmission } from "@/lib/auth";
+import { getOrCreateUserSession, getUser, saveSubmission, setUser, type TBSubmission } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 import {
   ACCEPTED_VIDEO_EXTENSIONS,
@@ -18,24 +18,18 @@ import {
 export const Route = createFileRoute("/_authenticated/submit")({
   head: () => ({
     meta: [
-      { title: "Submit Video — Testbook Creator Lab" },
-      { name: "description", content: "Submit your Testbook Pass promotional video for review and start earning UPI payouts." },
-      { property: "og:title", content: "Submit Video — Testbook Creator Lab" },
+      { title: "Send Video - Testbook Creator Lab" },
+      { name: "description", content: "Upload your Testbook Pass video to Testbook for review, publishing, and UPI payout tracking." },
+      { property: "og:title", content: "Send Video - Testbook Creator Lab" },
       { property: "og:url", content: "/submit" },
     ],
   }),
   component: SubmitPage,
 });
 
-const exams = [
-  "SSC / Govt", "Banking", "Railways", "NEET / Medical",
-  "JEE / Engineering", "UPSC / Civils", "Teaching", "State PSC", "CAT / MBA", "Other",
-];
-
 const platforms = [
-  { id: "instagram", label: "Instagram Reel", Icon: Instagram, followerLabel: "Instagram followers" },
-  { id: "youtube",   label: "YouTube Short",  Icon: Youtube,   followerLabel: "YouTube subscribers" },
-  { id: "facebook",  label: "Facebook Reel",  Icon: Facebook,  followerLabel: "Facebook followers" },
+  { id: "instagram", label: "Instagram audience", Icon: Instagram, followerLabel: "Instagram followers" },
+  { id: "youtube",   label: "YouTube audience",   Icon: Youtube,   followerLabel: "YouTube subscribers" },
 ] as const;
 
 const payoutRules = [
@@ -46,7 +40,54 @@ const payoutRules = [
   { views: "10 Lakh", amount: "₹25,000" },
 ];
 
+const TESTBOOK_REFERRALS_URL = "https://testbook.com/referrals";
+
+const uploadFacts = [
+  {
+    title: "Testbook Pass is built for exam prep",
+    body: "It brings mock tests, PYQs, live classes, notes, and practice into one learning flow.",
+  },
+  {
+    title: "Your first 3 seconds matter",
+    body: "Start with a real student problem, then show how Testbook Pass helped you solve it.",
+  },
+  {
+    title: "You create, Testbook publishes",
+    body: "Upload the final file here. Our team reviews it and publishes approved videos from Testbook channels.",
+  },
+  {
+    title: "Views unlock payout milestones",
+    body: "Once a Testbook-published video crosses eligible milestones, payout is processed to your linked UPI.",
+  },
+];
+
+const howToSteps = [
+  {
+    title: "Create a final 30-60s video",
+    body: "Use vertical 9:16 format, clear voice, good light, and no editing watermarks.",
+  },
+  {
+    title: "Show Testbook Pass clearly",
+    body: "Screen-record or show useful parts like mock tests, PYQs, live classes, notes, or practice.",
+  },
+  {
+    title: "Tell your real exam story",
+    body: "Mention your exam, one specific feature you use, and why it helps your preparation.",
+  },
+  {
+    title: "Give the video to Testbook",
+    body: "Upload the final file here. You do not need to publish it yourself or write the final caption.",
+  },
+];
+
+const howToDonts = [
+  "No copyrighted music or clips",
+  "No fake rank, selection, or result claims",
+  "No competitor app or coaching logo visible",
+];
+
 type UpiState = { loading: boolean; upi: string | null; error: string | null };
+type UploadResponse = { ok: boolean; cdnUrl?: string; filename?: string; error?: string };
 
 // Two-stage submit pipeline stages
 type SubmitStage =
@@ -59,8 +100,8 @@ type SubmitStage =
 const STAGE_LABELS: Record<SubmitStage, string> = {
   idle:                 "",
   uploading_to_cdn:     "Uploading your video…",
-  creating_submission:  "Submitting your entry…",
-  done:                 "Submitted successfully!",
+  creating_submission:  "Sending your entry…",
+  done:                 "Sent successfully!",
   error:                "Something went wrong",
 };
 
@@ -70,6 +111,43 @@ function fmt(n: number) {
   return (n / 1024).toFixed(0) + " KB";
 }
 
+function clampProgress(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function errorToMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+function uploadVideoToLms(
+  formData: FormData,
+  onProgress: (progress: number) => void,
+): Promise<UploadResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", "/api/upload-lms");
+    xhr.upload.onloadstart = () => onProgress(2);
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      onProgress(Math.min(95, (event.loaded / event.total) * 95));
+    };
+    xhr.upload.onload = () => onProgress(95);
+    xhr.onerror = () => reject(new Error("Network interrupted while uploading the video. Please try again."));
+    xhr.onload = () => {
+      try {
+        const data = JSON.parse(xhr.responseText || "{}") as UploadResponse;
+        onProgress(data.ok ? 100 : 0);
+        resolve(data);
+      } catch {
+        reject(new Error(`Upload failed (HTTP ${xhr.status}). Please try again.`));
+      }
+    };
+
+    xhr.send(formData);
+  });
+}
+
 function SubmitPage() {
   const navigate = useNavigate();
   const [phone, setPhone]           = useState("");
@@ -77,7 +155,7 @@ function SubmitPage() {
   const [upiState, setUpiState]     = useState<UpiState>({ loading: true, upi: null, error: null });
   const [form, setForm]             = useState({
     fullName: "", email: "", upi: "",
-    examCategory: exams[0],
+    examCategory: "",
     platform: "instagram" as TBSubmission["platform"],
     followers: "",
     videoMode: "upload" as const,
@@ -90,11 +168,25 @@ function SubmitPage() {
   const [dragOver, setDragOver]         = useState(false);
   const [stage, setStage]               = useState<SubmitStage>("idle");
   const [errorMsg, setErrorMsg]         = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [factIndex, setFactIndex]       = useState(0);
   const [cdnUrl, setCdnUrl]             = useState<string | null>(null); // persisted after Step 1
+  const [howToModal, setHowToModal]     = useState(false);
   const [termsModal, setTermsModal]     = useState(false);
   const [termsRead, setTermsRead]       = useState(false);
   const fileRef      = useRef<HTMLInputElement>(null);
   const termsScrollRef = useRef<HTMLDivElement>(null);
+  const isBusy = stage === "uploading_to_cdn" || stage === "creating_submission";
+
+  useEffect(() => {
+    if (!isBusy) return;
+
+    const timer = window.setInterval(() => {
+      setFactIndex((i) => (i + 1) % uploadFacts.length);
+    }, 3500);
+
+    return () => window.clearInterval(timer);
+  }, [isBusy]);
 
   useEffect(() => {
     const u = getUser();
@@ -104,8 +196,14 @@ function SubmitPage() {
     setUserId(uid);
     fetch(`/api/fetch-upi?phone=${encodeURIComponent(u.phone)}&userId=${encodeURIComponent(uid)}`)
       .then((r) => r.json())
-      .then((d: { upi?: string | null }) => {
-        if (d.upi) setForm((f) => ({ ...f, upi: d.upi! }));
+      .then((d: { upi?: string | null; name?: string | null; studentId?: string | null }) => {
+        const name = d.name?.trim();
+        setForm((f) => ({
+          ...f,
+          ...(d.upi ? { upi: d.upi } : {}),
+          ...(name && !f.fullName ? { fullName: name } : {}),
+        }));
+        if (name) setUser({ ...u, name, userId: u.userId || d.studentId || uid });
         setUpiState({ loading: false, upi: d.upi ?? null, error: null });
       })
       .catch(() => setUpiState({ loading: false, upi: null, error: null }));
@@ -127,6 +225,7 @@ function SubmitPage() {
     setErrorMsg("");
     setVideoFile(file);
     setCdnUrl(null); // reset CDN URL if a new file is picked
+    setUploadProgress(0);
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setVideoPreview(URL.createObjectURL(file));
     track("UGC_creators_video_file_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
@@ -135,6 +234,7 @@ function SubmitPage() {
   const removeFile = () => {
     setVideoFile(null);
     setCdnUrl(null);
+    setUploadProgress(0);
     if (videoPreview) { URL.revokeObjectURL(videoPreview); setVideoPreview(null); }
     if (fileRef.current) fileRef.current.value = "";
   };
@@ -152,18 +252,15 @@ function SubmitPage() {
   const validationItems = [
     { ok: form.fullName.trim().length >= 2, message: "Enter your full name." },
     { ok: /\S+@\S+\.\S+/.test(form.email), message: "Enter a valid email address." },
-    { ok: isUpi(form.upi), message: "Enter a valid UPI ID." },
+    { ok: isUpi(form.upi), message: "Login at testbook.com/referrals and update your UPI ID." },
     { ok: form.followers.trim() !== "", message: `Enter your ${currentPlatform.followerLabel.toLowerCase()}.` },
     { ok: !!videoFile, message: "Choose a video file." },
-    { ok: form.caption.trim().length >= 1, message: "Enter a caption for your post." },
     { ok: form.consent, message: "Confirm the content consent checkbox." },
     { ok: termsRead, message: "Agree to the Terms & Conditions checkbox." },
   ];
 
   const missingItems = validationItems.filter((item) => !item.ok);
   const valid = missingItems.length === 0;
-
-  const isBusy = stage === "uploading_to_cdn" || stage === "creating_submission";
 
   /* ── Two-stage submit pipeline ──────────────────────────── */
   const submit = async (e: React.FormEvent) => {
@@ -180,6 +277,7 @@ function SubmitPage() {
 
     if (!resolvedCdnUrl) {
       setStage("uploading_to_cdn");
+      setUploadProgress(0);
 
       const fd = new FormData();
       fd.append("file",          videoFile!);
@@ -190,26 +288,28 @@ function SubmitPage() {
       fd.append("platform",      form.platform);
 
       try {
-        const res  = await fetch("/api/upload-lms", { method: "POST", body: fd });
-        const data = await res.json() as { ok: boolean; cdnUrl?: string; error?: string };
+        const data = await uploadVideoToLms(fd, setUploadProgress);
 
         if (!data.ok || !data.cdnUrl) {
-          throw new Error(data.error ?? `Upload failed (HTTP ${res.status})`);
+          throw new Error(data.error ?? "Video upload failed. Please try again.");
         }
 
         resolvedCdnUrl = data.cdnUrl;
         setCdnUrl(resolvedCdnUrl); // persist so retry skips re-upload
       } catch (err) {
         setStage("error");
-        setErrorMsg(String(err));
+        setErrorMsg(errorToMessage(err));
         return;
       }
+    } else {
+      setUploadProgress(100);
     }
 
     /* ── Stage 2: Save submission + forward to Apps Script ── */
     setStage("creating_submission");
+    setUploadProgress(100);
 
-    const submission: TBSubmission = {
+    let submission: TBSubmission = {
       id: submissionId,
       ...form,
       videoFileName: videoFile?.name,
@@ -224,17 +324,24 @@ function SubmitPage() {
     };
 
     try {
-      await fetch("/api/submit", {
+      const res = await fetch("/api/submit", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ ...submission, userId, sessionId, videoFile: undefined }),
       });
+      const data = await res.json().catch(() => ({})) as { appsScriptId?: string | null };
+      if (data.appsScriptId) {
+        submission = { ...submission, id: data.appsScriptId };
+      }
     } catch { /* non-blocking — submission is saved locally regardless */ }
 
     saveSubmission(submission);
     setStage("done");
     setTimeout(() => navigate({ to: "/dashboard" }), 1600);
   };
+
+  const progressPct = clampProgress(cdnUrl || stage === "creating_submission" ? 100 : uploadProgress);
+  const currentFact = uploadFacts[factIndex % uploadFacts.length];
 
   /* ── Success screen ─────────────────────────────────────── */
   if (stage === "done") {
@@ -244,13 +351,13 @@ function SubmitPage() {
           <div className="size-16 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
             <CheckCircle2 className="size-8" />
           </div>
-          <h2 className="mt-5 text-2xl font-bold text-tb-navy">Video Submitted!</h2>
+          <h2 className="mt-5 text-2xl font-bold text-tb-navy">Video sent to Testbook!</h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Your video has been submitted and our team will review it within 24 hours.
+            Your video has been uploaded to Testbook. Our team will review it and publish it if approved.
             Redirecting to your dashboard…
           </p>
           <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            {["Review in 24h", "Track live status", "UPI payout on milestone"].map((s) => (
+            {["Review in 24h", "Testbook publishes", "UPI payout on milestone"].map((s) => (
               <div key={s} className="card p-3">
                 <CheckCircle2 className="size-4 text-emerald-500 mx-auto mb-2" />
                 <div className="text-xs font-medium text-tb-navy">{s}</div>
@@ -269,11 +376,47 @@ function SubmitPage() {
       {/* Header */}
       <div className="fade-up">
         <span className="badge text-xs"><Star className="size-3.5" /> New submission</span>
-        <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Submit your video</h1>
+        <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Send your video to Testbook</h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Upload your video and our team will review it within 24 hours.
+          Upload your finished video file. Testbook will review and publish approved videos.
         </p>
       </div>
+
+      {isBusy && (
+        <div className="fixed inset-0 z-40 bg-white/30 backdrop-blur-sm pointer-events-none" aria-hidden="true" />
+      )}
+      {isBusy && (
+        <div className="fixed inset-x-0 top-20 z-50 px-4 pointer-events-none fade-up">
+          <div
+            role="status"
+            aria-live="polite"
+            className="pointer-events-auto mx-auto max-w-xl rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl backdrop-blur"
+          >
+            <div className="flex items-start gap-3">
+              <div className="size-11 rounded-2xl tb-gradient text-white flex items-center justify-center shrink-0 shadow-sm">
+                <Star className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-black text-tb-navy">Uploading to Testbook</div>
+                  <div className="text-sm font-black text-tb-blue tabular-nums">{progressPct}%</div>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-blue-100 overflow-hidden">
+                  <div
+                    className="h-full tb-gradient rounded-full transition-all duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <div className="mt-3 rounded-xl bg-blue-50/80 border border-blue-100 p-3">
+                  <div className="text-xs font-bold uppercase tracking-wide text-tb-blue">Testbook Pass fact</div>
+                  <div className="mt-1 text-sm font-bold text-tb-navy">{currentFact.title}</div>
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{currentFact.body}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* UPI banner */}
       <div className={`card p-4 flex items-start gap-3 fade-up ${
@@ -298,12 +441,31 @@ function SubmitPage() {
           ) : upiState.upi ? (
             <>
               <div className="text-sm font-bold text-emerald-800">UPI on file: {upiState.upi}</div>
-              <div className="text-sm text-emerald-700/80 mt-0.5">Payouts will be sent here. Update below to change.</div>
+              <div className="text-sm text-emerald-700/80 mt-0.5">Payouts will be sent here. Update it in your Testbook account if it needs changing.</div>
             </>
           ) : (
             <>
               <div className="text-sm font-bold text-amber-900">No UPI linked yet</div>
-              <div className="text-sm text-amber-800/80 mt-0.5">Add your UPI below — payouts can't be sent without it.</div>
+              <div className="text-sm text-amber-800/80 mt-0.5 leading-relaxed">
+                Go to{" "}
+                <a
+                  href={TESTBOOK_REFERRALS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-amber-950 underline underline-offset-2"
+                >
+                  testbook.com/referrals
+                </a>
+                , login, update your UPI ID, then come back and refresh this page.
+              </div>
+              <a
+                href={TESTBOOK_REFERRALS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-amber-900 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-amber-800"
+              >
+                Login &amp; update UPI <ExternalLink className="size-3.5" />
+              </a>
             </>
           )}
         </div>
@@ -337,30 +499,36 @@ function SubmitPage() {
             </Field>
             <Field label="UPI ID" hint="e.g. name@okhdfc">
               <input
-                className="input-field" required placeholder="name@upi"
+                className="input-field bg-secondary/60 cursor-not-allowed text-tb-navy"
+                required
+                disabled
+                placeholder={
+                  upiState.loading
+                    ? "Checking UPI..."
+                    : upiState.upi
+                      ? "UPI linked to your Testbook account"
+                      : "No UPI linked. Update it from Testbook referrals"
+                }
                 value={form.upi}
-                onChange={(e) => setForm({ ...form, upi: e.target.value })}
               />
               {form.upi && !isUpi(form.upi) && (
-                <p className="mt-1.5 text-xs text-red-600">Enter a valid UPI ID (e.g. name@okaxis)</p>
+                <p className="mt-1.5 text-xs text-red-600">
+                  UPI on file is invalid. Login at{" "}
+                  <a href={TESTBOOK_REFERRALS_URL} target="_blank" rel="noreferrer" className="font-bold underline">
+                    testbook.com/referrals
+                  </a>{" "}
+                  and update your UPI ID.
+                </p>
               )}
-            </Field>
-            <Field label="Exam category" className="sm:col-span-2">
-              <select
-                className="input-field" value={form.examCategory}
-                onChange={(e) => setForm({ ...form, examCategory: e.target.value })}
-              >
-                {exams.map((x) => <option key={x}>{x}</option>)}
-              </select>
             </Field>
           </div>
         </FormSection>
 
-        {/* ── Section 2: Platform & audience ── */}
-        <FormSection title="Platform & audience" step={2}>
+        {/* ── Section 2: Audience details ── */}
+        <FormSection title="Audience details" step={2}>
           <div className="space-y-4">
-            <Field label="Which platform will you post on?">
-              <div className="grid grid-cols-3 gap-3 mt-1">
+            <Field label="Where is your audience strongest?">
+              <div className="grid grid-cols-2 gap-3 mt-1">
                 {platforms.map(({ id, label, Icon }) => {
                   const active = form.platform === id;
                   return (
@@ -422,7 +590,7 @@ function SubmitPage() {
         </FormSection>
 
         {/* ── Section 3: Video upload ── */}
-        <FormSection title="Upload your video" step={3}>
+        <FormSection title="Give us your video" step={3}>
           <div className="space-y-4">
 
             {/* Info tip */}
@@ -463,12 +631,35 @@ function SubmitPage() {
                   {cdnUrl ? (
                     <div className="mt-3 flex items-center gap-2 text-sm text-emerald-700 font-medium">
                       <CheckCircle2 className="size-4 shrink-0" />
-                      Video uploaded — ready to submit
+                      Video uploaded — ready to send to Testbook
                     </div>
                   ) : (
                     <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 font-medium">
                       <Film className="size-4 shrink-0" />
                       Ready to upload
+                    </div>
+                  )}
+                  {(isBusy || cdnUrl || uploadProgress > 0) && (
+                    <div className="mt-4 rounded-xl border border-blue-100 bg-white/80 p-3">
+                      <div className="flex items-center justify-between gap-3 text-xs font-bold">
+                        <span className="text-tb-navy">
+                          {cdnUrl || stage === "creating_submission" ? "Video upload complete" : "Video upload progress"}
+                        </span>
+                        <span className="text-tb-blue tabular-nums">{progressPct}%</span>
+                      </div>
+                      <div className="mt-2 h-2.5 rounded-full bg-blue-100 overflow-hidden">
+                        <div
+                          className="h-full tb-gradient rounded-full transition-all duration-300"
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                        {stage === "uploading_to_cdn"
+                          ? "Uploading the file. Please keep this tab open."
+                          : cdnUrl || stage === "creating_submission"
+                            ? "File received. We are finalising the handoff to Testbook."
+                            : "Progress will appear here after you tap Upload & Send to Testbook."}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -506,15 +697,6 @@ function SubmitPage() {
               </div>
             )}
 
-            {/* Caption */}
-            <Field label="Caption used on the post" hint="Include #TestbookPass in your caption">
-              <textarea
-                rows={4} className="input-field resize-none" required
-                placeholder={`New to Testbook Pass and honestly — wish I'd switched sooner.\n\n#TestbookPass #StudyWithMe`}
-                value={form.caption}
-                onChange={(e) => setForm({ ...form, caption: e.target.value })}
-              />
-            </Field>
           </div>
         </FormSection>
 
@@ -525,19 +707,36 @@ function SubmitPage() {
             <span className="text-base font-bold text-tb-navy">Agreement</span>
           </div>
 
-          <label className="flex items-start gap-3 cursor-pointer group p-3 rounded-xl hover:bg-secondary/50 transition-colors">
+          <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors">
             <input
               type="checkbox"
-              className="mt-0.5 size-4 accent-tb-blue shrink-0"
+              className="mt-0.5 size-4 accent-tb-blue shrink-0 cursor-pointer"
               checked={form.consent}
               onChange={(e) => setForm({ ...form, consent: e.target.checked })}
             />
-            <span className="text-sm text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">
-              I confirm this is my original content, it follows the{" "}
-              <Link to="/sop" className="text-tb-blue font-semibold hover:underline">Creator SOP</Link>, and
-              I consent to Testbook resharing it on their official channels.
-            </span>
-          </label>
+            <div className="flex-1">
+              <span className="text-sm text-muted-foreground leading-relaxed">
+                I confirm this is my original content, it follows the{" "}
+                <button
+                  type="button"
+                  onClick={() => setHowToModal(true)}
+                  className="text-tb-blue font-semibold hover:underline inline-flex items-center gap-0.5"
+                >
+                  How to create guide <ChevronRight className="size-3.5" />
+                </button>
+                , and I give Testbook permission to publish and use it on official channels.
+              </span>
+              {!form.consent && (
+                <button
+                  type="button"
+                  onClick={() => setHowToModal(true)}
+                  className="mt-2.5 text-sm font-bold text-white bg-tb-navy hover:bg-tb-blue transition-colors px-4 py-2 rounded-lg flex items-center gap-2 w-fit"
+                >
+                  <Film className="size-4" /> Read How to create
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors">
             <input
@@ -574,13 +773,24 @@ function SubmitPage() {
           <div className="card p-5 space-y-4 !border-tb-blue/30 bg-blue-50/40 fade-up">
             <div className="flex items-center gap-3">
               <Loader2 className="size-5 text-tb-blue animate-spin shrink-0" />
-              <span className="text-sm font-semibold text-tb-navy">{STAGE_LABELS[stage]}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-tb-navy">{STAGE_LABELS[stage]}</span>
+                  <span className="text-sm font-black text-tb-blue tabular-nums">{progressPct}%</span>
+                </div>
+                <div className="mt-2 h-2.5 rounded-full bg-blue-100 overflow-hidden">
+                  <div
+                    className="h-full tb-gradient rounded-full transition-all duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+              </div>
             </div>
             {/* Pipeline steps */}
             <div className="space-y-2">
               {([
                 { key: "uploading_to_cdn",    Icon: CloudUpload, label: "Uploading your video" },
-                { key: "creating_submission", Icon: Send,        label: "Submitting your entry" },
+                { key: "creating_submission", Icon: Send,        label: "Sending your entry to Testbook" },
               ] as const).map(({ key, Icon, label }) => {
                 const isActive = stage === key;
                 const isDone   = (stage === "creating_submission" && key === "uploading_to_cdn");
@@ -601,7 +811,7 @@ function SubmitPage() {
             <p className="text-xs text-muted-foreground">
               {stage === "uploading_to_cdn"
                 ? "Large files may take a minute. Do not close this tab."
-                : "Almost done — finalising your submission."}
+                : "Almost done - finalising your handoff to Testbook."}
             </p>
           </div>
         )}
@@ -615,7 +825,7 @@ function SubmitPage() {
               <div className="text-sm text-red-700 mt-0.5 leading-relaxed">{errorMsg}</div>
               <button
                 type="button"
-                onClick={() => { setStage("idle"); setErrorMsg(""); }}
+                onClick={() => { setStage("idle"); setErrorMsg(""); setUploadProgress(0); }}
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors px-3 py-1.5 rounded-lg"
               >
                 <RefreshCw className="size-3.5" /> Try again
@@ -632,13 +842,17 @@ function SubmitPage() {
           >
             {isBusy
               ? <><Loader2 className="size-4 animate-spin" /> {STAGE_LABELS[stage]}</>
-              : <><CloudUpload className="size-4" /> Upload &amp; Submit for Review <ArrowRight className="size-4" /></>
+              : <><CloudUpload className="size-4" /> Upload &amp; Send to Testbook <ArrowRight className="size-4" /></>
             }
           </button>
           {!isBusy && (
-            <Link to="/sop" className="text-sm text-muted-foreground hover:text-tb-blue inline-flex items-center gap-1.5 font-medium">
-              Re-read the SOP <ExternalLink className="size-3.5" />
-            </Link>
+            <button
+              type="button"
+              onClick={() => setHowToModal(true)}
+              className="text-sm text-muted-foreground hover:text-tb-blue inline-flex items-center gap-1.5 font-medium"
+            >
+              How to create <ChevronRight className="size-3.5" />
+            </button>
           )}
         </div>
 
@@ -649,6 +863,93 @@ function SubmitPage() {
           </div>
         )}
       </form>
+
+      {/* ── How to create modal ── */}
+      {howToModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 fade-up"
+          onClick={() => setHowToModal(false)}
+        >
+          <div
+            className="bg-white w-full sm:max-w-2xl sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <Film className="size-5 text-tb-blue" />
+                <div>
+                  <div className="font-bold text-tb-navy">How to create your video</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Create it. Give it to Testbook. We publish approved videos.</div>
+                </div>
+              </div>
+              <button
+                type="button" onClick={() => setHowToModal(false)}
+                className="size-9 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4">
+                <div className="flex items-center gap-2 font-bold text-tb-navy">
+                  <CloudUpload className="size-4 text-tb-blue" />
+                  Your job is only to create the final video file
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                  Testbook handles final publishing copy, posting, and view tracking after approval.
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {howToSteps.map((item, index) => (
+                  <div key={item.title} className="rounded-xl border border-border bg-secondary/40 p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="size-6 rounded-full tb-gradient text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        {index + 1}
+                      </div>
+                      <div className="text-sm font-bold text-tb-navy">{item.title}</div>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-red-100 bg-red-50/60 p-4">
+                <div className="text-sm font-bold text-red-800">Avoid these</div>
+                <div className="mt-3 grid gap-2">
+                  {howToDonts.map((item) => (
+                    <div key={item} className="flex items-start gap-2 text-sm text-red-700">
+                      <X className="size-4 mt-0.5 shrink-0" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-border shrink-0 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setForm((f) => ({ ...f, consent: true }));
+                  setHowToModal(false);
+                }}
+                className="btn-primary flex-1 justify-center py-3"
+              >
+                <CheckCircle2 className="size-4" /> I agree and will follow this
+              </button>
+              <button
+                type="button"
+                onClick={() => setHowToModal(false)}
+                className="btn-ghost text-center text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Terms modal ── */}
       {termsModal && (
@@ -698,11 +999,11 @@ function SubmitPage() {
               {[
                 { t: "1. Overview", b: "These Terms & Conditions govern your participation in the Testbook Creators Lab campaign, operated by Testbook.com. By submitting a video through the Creators Lab portal, you agree to be bound by these terms in their entirety." },
                 { t: "2. Eligibility", b: "You must be a registered Testbook user with a valid phone number. Testbook employees and their immediate family members are not eligible." },
-                { t: "3. Campaign Participation", b: "Each participant may submit one (1) video per campaign cycle. All videos must be uploaded directly through the portal. Testbook may modify or discontinue any campaign at any time without prior notice." },
-                { t: "4. Review & Approval", b: "All submissions are subject to review. The review process typically takes 24–48 hours. Testbook reserves sole discretion to approve or reject any submission." },
+                { t: "3. Campaign Participation", b: "Each participant may submit one (1) video per campaign cycle. All videos must be uploaded directly through the portal for Testbook review and publishing. Testbook may modify or discontinue any campaign at any time without prior notice." },
+                { t: "4. Review & Approval", b: "All submissions are subject to review. The review process typically takes 24–48 hours. Testbook reserves sole discretion to approve, reject, publish, edit, or schedule any submission." },
                 { t: "5. Ownership & Intellectual Property", b: "By submitting, you irrevocably transfer all rights, title, and interest in the video to Testbook.com, including copyright and distribution rights. Testbook may use your name, likeness, and voice for promotional purposes." },
                 { t: "6. Payouts", b: "Payouts follow the cumulative view milestones shown above and are processed to the UPI ID linked to your Testbook account after review and eligibility confirmation. Testbook is not responsible for failed payments due to incorrect UPI details." },
-                { t: "7. Prohibited Conduct", b: "Strictly prohibited: submitting non-original content, fabricating information, manipulating view counts, using bots, abusive behaviour, or deleting your video before payout is complete." },
+                { t: "7. Prohibited Conduct", b: "Strictly prohibited: submitting non-original content, fabricating information, manipulating view counts, using bots, abusive behaviour, or attempting to interfere with Testbook's published video metrics." },
                 { t: "8. Privacy & Data", b: "By participating, you consent to Testbook collecting and processing your personal information (name, phone, email, UPI, video) for campaign administration and promotional use, per the Testbook Privacy Policy." },
                 { t: "9. Disclaimers", b: "Testbook makes no guarantee regarding views or reach. Testbook is not liable for technical issues or portal downtime. Testbook may remove any video at any time without notice." },
                 { t: "10. Modifications", b: "Testbook may update these Terms at any time. Continued participation constitutes acceptance of the revised terms." },

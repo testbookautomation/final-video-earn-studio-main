@@ -6,9 +6,17 @@ import { clearUser, getUser, type TBUser } from "@/lib/auth";
 const links = [
   { to: "/", label: "Home" },
   { to: "/sop", label: "Creator SOP" },
-  { to: "/submit", label: "Submit Video" },
+  { to: "/submit", label: "Send Video" },
   { to: "/dashboard", label: "Dashboard" },
 ] as const;
+
+function initialsForUser(user: TBUser | null): string {
+  const parts = (user?.name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length > 0) {
+    return parts.slice(0, 2).map((part) => part[0]).join("");
+  }
+  return user?.phone ? user.phone.slice(-2) : "TB";
+}
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -35,7 +43,8 @@ export function Navbar() {
     setOpen(false);
   }, [location.pathname]);
 
-  const initials = user?.phone ? user.phone.slice(-2) : "TB";
+  const initials = initialsForUser(user);
+  const userLabel = user?.name?.trim() || (user?.phone ? `+91 ${user.phone.slice(-4)}` : "");
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-border shadow-sm">
@@ -79,7 +88,7 @@ export function Navbar() {
                 <span className="size-8 rounded-full tb-gradient text-white flex items-center justify-center text-xs font-bold uppercase">
                   {initials}
                 </span>
-                <span className="text-sm font-semibold text-tb-navy">+91 {user.phone.slice(-4)}</span>
+                <span className="max-w-32 truncate text-sm font-semibold text-tb-navy">{userLabel}</span>
                 <ChevronDown className="size-4 text-muted-foreground" />
               </button>
               {menu && (
@@ -88,7 +97,7 @@ export function Navbar() {
                     <LayoutDashboard className="size-4" /> Dashboard
                   </Link>
                   <Link to="/submit" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary">
-                    <Send className="size-4" /> Submit video
+                    <Send className="size-4" /> Send video
                   </Link>
                   <Link to="/sop" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary">
                     <FileText className="size-4" /> Creator SOP

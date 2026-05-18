@@ -1,15 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import {
-  CheckCircle2, X, Copy, Check, ArrowRight, Video, Lightbulb, ListChecks,
-  AlertTriangle, Hash, Smartphone, Star, IndianRupee, Eye,
+  CheckCircle2, X, ArrowRight, Video, Lightbulb, ListChecks,
+  AlertTriangle, Smartphone, PlayCircle,
 } from "lucide-react";
 
 export const Route = createFileRoute("/sop")({
   head: () => ({
     meta: [
       { title: "Creator SOP — Testbook Creator Lab" },
-      { name: "description", content: "Step-by-step creator guide: video specs, do's and don'ts, rejection reasons, hashtags and approved caption copy." },
+      { name: "description", content: "Step-by-step creator guide: video specs, do's and don'ts, rejection reasons, and handoff notes for videos Testbook can publish." },
       { property: "og:title", content: "Creator SOP — Testbook Creator Lab" },
       { property: "og:url", content: "/sop" },
     ],
@@ -21,8 +20,8 @@ export const Route = createFileRoute("/sop")({
 const sopSteps = [
   { title: "Pick your hook (0–3s)", desc: "Open with a relatable problem: \"Stopped paying ₹2000/mo for coaching — here's what I switched to.\"" },
   { title: "Show the app (3–20s)", desc: "Screen-record the Testbook app: mock test, video lecture or a daily quiz." },
-  { title: "Share your why (20–45s)", desc: "Why it worked for YOUR exam. Mention 1 specific feature you actually use." },
-  { title: "Clear CTA (45–60s)", desc: "Tell viewers exactly what to do: \"Search Testbook on Play Store, get Pass at 60% off this week.\"" },
+  { title: "Tell your story (20–45s)", desc: "Why it worked for YOUR exam. Mention 1 specific feature you actually use." },
+  { title: "Clear CTA (45–60s)", desc: "End with a simple Testbook Pass mention. Testbook will handle the final publishing copy." },
 ];
 
 const specs = [
@@ -30,7 +29,7 @@ const specs = [
   { k: "Duration", v: "30–60 seconds" },
   { k: "Resolution", v: "1080×1920 min" },
   { k: "Audio", v: "Clear voiceover, no background music over voice" },
-  { k: "Captions", v: "On-screen text recommended (Hindi/regional ok)" },
+  { k: "On-screen text", v: "Recommended (Hindi/regional ok)" },
   { k: "Format", v: "MP4 / MOV" },
 ];
 
@@ -38,8 +37,8 @@ const dos = [
   "Use natural lighting (face a window)",
   "Speak in your audience's first language",
   "Show real Testbook screens",
-  "Add captions for sound-off viewers",
-  "Tag @testbookdotcom and use the hashtag",
+  "Add on-screen text for sound-off viewers",
+  "Export a clean final file that Testbook can publish",
 ];
 const donts = [
   "Don't use copyrighted music",
@@ -50,77 +49,45 @@ const donts = [
 ];
 
 const rejections = [
-  { title: "Copyrighted audio", desc: "Trending audio that isn't free-use will get muted on IG/YT and disqualified." },
+  { title: "Copyrighted audio", desc: "Trending audio that isn't free-use cannot be published from Testbook channels." },
   { title: "Misleading claims", desc: "\"100% selection guaranteed\" or fake rank screenshots = instant rejection." },
   { title: "Competitor visibility", desc: "Any other ed-tech app/logo visible in frame disqualifies the entry." },
   { title: "Low effort", desc: "Static screen recordings with no face/voice rarely cross the bar." },
 ];
 
-const caption = `New to Testbook Pass and honestly — wish I'd switched sooner. Mock tests, PYQs and live classes for every exam, all in one app. Use code CREATOR60 for 60% off this week.
-
-#TestbookPass #StudyWithMe #ExamPrep #SSC #Banking #NEET #Testbook`;
-
-const hashtags = ["#TestbookPass", "#TestbookCreators", "#StudyWithMe", "#ExamPrep", "#SSCExam", "#BankingExam"];
-
-const testimonials = [
+const demoVideos = [
   {
-    name: "Priya S.",
-    handle: "@priyasolves",
-    exam: "SSC CGL",
-    earnings: "₹18,400",
-    views: "6.2L",
-    gradient: "from-orange-400 to-rose-500",
-    initial: "P",
-    quote: "Submitted my first reel on a Monday — approved by Wednesday. UPI hit on Friday. Easiest ₹6,000 I've made.",
+    title: "Demo video 1",
+    note: "Notice the quick hook, simple language, and clear Testbook Pass mention.",
+    src: "https://cdn.testbook.com/1779137980733-videoplayback%20%281%29.mp4/1779137981.mp4",
   },
   {
-    name: "Arjun K.",
-    handle: "@arjun.studies",
-    exam: "NEET",
-    earnings: "₹12,500",
-    views: "3.8L",
-    gradient: "from-violet-500 to-indigo-500",
-    initial: "A",
-    quote: "Never thought a 45-second video could earn me this much while studying. Just talked honestly about the app.",
+    title: "Demo video 2",
+    note: "Use this as a reference for pacing, framing, and keeping the message tight.",
+    src: "https://cdn.testbook.com/1779137980734-videoplayback.mp4/1779137981.mp4",
   },
   {
-    name: "Neha R.",
-    handle: "@neha.banks",
-    exam: "Banking",
-    earnings: "₹6,000",
-    views: "1.4L",
-    gradient: "from-emerald-400 to-teal-500",
-    initial: "N",
-    quote: "I followed the SOP exactly — hook, show the app, share my why, CTA. First try approval. Couldn't believe it.",
+    title: "Exam update style",
+    note: "A good example of making the topic exam-specific while staying easy to watch.",
+    src: "https://cdn.testbook.com/1779137980734-UP%20Police%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%86%E0%A4%88%201%20%E0%A4%B2%E0%A4%BE%E0%A4%96%20%E0%A4%B8%E0%A5%87%20%E0%A4%9C%E0%A4%BC%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%A6%E0%A4%BE%20%E0%A4%AD%E0%A4%B0%E0%A5%8D%E0%A4%A4%E0%A5%80%20%F0%9F%94%A5%F0%9F%93%9A....%23uppolice%20%23uppoliceconstableexam%20%23uppoliceconsta.mp4/1779137981.mp4",
   },
 ];
 
 function SOPPage() {
-  const [copiedCap, setCopiedCap] = useState(false);
-  const [copiedTag, setCopiedTag] = useState<string | null>(null);
-
-  const copy = async (text: string, kind: "cap" | "tag") => {
-    try {
-      await navigator.clipboard.writeText(text);
-      if (kind === "cap") { setCopiedCap(true); setTimeout(() => setCopiedCap(false), 1500); }
-      else { setCopiedTag(text); setTimeout(() => setCopiedTag(null), 1500); }
-    } catch {}
-  };
-
   return (
     <>
       <section className="tb-gradient text-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-14 md:py-20 fade-up">
           <div className="flex items-center gap-3 mb-4">
             <img
-              src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+              src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
               alt="Testbook"
-              className="h-7 w-auto brightness-0 invert opacity-90"
+              className="h-7 w-auto opacity-90"
             />
           </div>
           <span className="badge bg-white/10 text-white border-white/20"><Lightbulb className="size-3.5" /> Creator SOP</span>
           <h1 className="mt-3 text-3xl md:text-5xl font-bold tb-text-gradient">The 60-second formula that gets approved</h1>
-          <p className="mt-4 max-w-2xl text-white/80">Read this once. Save your draft. We approve ~85% of submissions on the first try when creators follow this.</p>
+          <p className="mt-4 max-w-2xl text-white/80">Read this once, record the video, and upload the final file to Testbook. We approve ~85% of submissions on the first try when creators follow this.</p>
         </div>
       </section>
 
@@ -189,63 +156,45 @@ function SOPPage() {
           </div>
         </div>
 
-        {/* Caption + hashtags */}
+        {/* Handoff */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><Hash className="size-5 text-tb-blue" /> Approved caption + hashtags</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Paste-ready copy. Personalise the first line for your exam.</p>
+          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><ListChecks className="size-5 text-tb-blue" /> Handoff checklist</h2>
+          <p className="mt-2 text-sm text-muted-foreground">You do not need to publish it yourself or write the final publishing copy. Upload a final video file that Testbook can publish.</p>
           <div className="mt-5 card p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-muted-foreground">CAPTION</span>
-              <button onClick={() => copy(caption, "cap")} className="text-xs flex items-center gap-1 text-tb-blue font-semibold">
-                {copiedCap ? <><Check className="size-3.5" /> Copied</> : <><Copy className="size-3.5" /> Copy</>}
-              </button>
-            </div>
-            <pre className="text-sm whitespace-pre-wrap font-sans text-tb-navy bg-secondary rounded-xl p-4">{caption}</pre>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {hashtags.map((h) => (
-                <button key={h} onClick={() => copy(h, "tag")} className="badge hover:bg-blue-100">
-                  {copiedTag === h ? <Check className="size-3" /> : <Copy className="size-3" />} {h}
-                </button>
+            <div className="grid sm:grid-cols-3 gap-3">
+              {[
+                { t: "Final cut", d: "No watermarks, no drafts, no editing timelines visible." },
+                { t: "Clear audio", d: "Voice should be understandable without music overpowering it." },
+                { t: "Publish-ready", d: "Testbook will prepare the final copy, publish the video, and track views." },
+              ].map((item) => (
+                <div key={item.t} className="rounded-xl border border-border p-4 bg-secondary/40">
+                  <div className="font-semibold text-tb-navy text-sm">{item.t}</div>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.d}</p>
+                </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Creator testimonials */}
+        {/* Demo videos */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><Star className="size-5 text-amber-500" /> Creators who followed this SOP</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Real results from creators who read this page before hitting record.</p>
-          <div className="mt-5 grid sm:grid-cols-3 gap-4">
-            {testimonials.map((t) => (
-              <div key={t.handle} className="card overflow-hidden">
-                {/* Thumbnail */}
-                <div className={`relative bg-gradient-to-br ${t.gradient} aspect-[4/3] flex items-center justify-center`}>
-                  <div className="size-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-black select-none">
-                    {t.initial}
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <span className="badge badge-orange text-xs">{t.exam}</span>
-                  </div>
-                  <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/40 backdrop-blur-sm rounded-full px-2.5 py-1">
-                    <Eye className="size-3 text-white/80" />
-                    <span className="text-xs font-semibold text-white">{t.views} views</span>
-                  </div>
+          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><PlayCircle className="size-5 text-tb-blue" /> Demo videos: how to make yours</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Watch these examples before recording. Follow the structure, then upload your own final file to Testbook.</p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            {demoVideos.map((video) => (
+              <div key={video.src} className="card overflow-hidden">
+                <div className="bg-tb-navy aspect-[9/16]">
+                  <video
+                    src={video.src}
+                    className="h-full w-full object-cover"
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
                 </div>
-                {/* Info */}
                 <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-bold text-tb-navy text-sm">{t.name}</div>
-                      <div className="text-xs text-muted-foreground">{t.handle}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-0.5 text-tb-orange font-black text-base justify-end">
-                        <IndianRupee className="size-3.5" />{t.earnings.replace("₹", "")}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">earned</div>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground leading-relaxed italic border-t border-border pt-3">"{t.quote}"</p>
+                  <div className="font-bold text-tb-navy text-sm">{video.title}</div>
+                  <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{video.note}</p>
                 </div>
               </div>
             ))}
@@ -255,8 +204,8 @@ function SOPPage() {
         {/* CTA */}
         <div className="card p-8 tb-gradient text-white text-center">
           <h2 className="text-2xl font-bold tb-text-gradient">Brief read. Camera ready?</h2>
-          <p className="mt-2 text-sm text-white/80">Submit your video — approval comes back within 24 hours.</p>
-          <Link to="/submit" className="btn-orange mt-5 inline-flex">Submit your video <ArrowRight className="size-4" /></Link>
+          <p className="mt-2 text-sm text-white/80">Upload your video to Testbook — approval comes back within 24 hours.</p>
+          <Link to="/submit" className="btn-orange mt-5 inline-flex">Send your video <ArrowRight className="size-4" /></Link>
         </div>
       </section>
     </>

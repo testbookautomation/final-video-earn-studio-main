@@ -108,7 +108,7 @@ function handleSubmit(data) {
       return { success: false, error: "duplicate", message: "This video has already been submitted." };
     }
 
-    var submissionId = generateId("TB");
+    var submissionId = safeStr(data.submissionId) || generateId("TB");
     var now = new Date().toISOString();
     var meta = typeof data.metadata === "object" ? data.metadata : {};
 
@@ -456,8 +456,9 @@ function handleStatus(phone, userId, submissionId) {
         var rRow   = rRows[ri];
         var rSid   = safeStr(rRow[rCol["Submission ID"]]);
         var rPhone = normalizePhone(String(rRow[rCol["Phone"]] || ""));
-        // Match by submissionId first, fall back to phone
-        var matched = (nSid && rSid === nSid) || (!nSid && nPhone && rPhone === nPhone);
+        // Match by submissionId first, fall back to phone for older local submissions
+        // that were saved before the Apps Script ID was returned to the browser.
+        var matched = (nSid && rSid === nSid) || (nPhone && rPhone === nPhone);
         if (!matched) continue;
 
         var rStatus      = safeStr(rRow[rCol["Status"]]);

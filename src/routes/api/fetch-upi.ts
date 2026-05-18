@@ -6,7 +6,7 @@
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { APPS_SCRIPT_URL, lmsGetStudentVpaByPhone } from "@/lib/lms";
+import { APPS_SCRIPT_URL, lmsGetStudentProfileByPhone } from "@/lib/lms";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -27,6 +27,9 @@ export const Route = createFileRoute("/api/fetch-upi")({
         const userId = url.searchParams.get("userId") ?? phone;
         const debug  = url.searchParams.get("debug") === "1";
         let lmsError: string | null = null;
+        let lmsName: string | null = null;
+        let lmsStudentId: string | null = null;
+        let lmsMobile: string | null = null;
 
         if (!phone) {
           return new Response(JSON.stringify({ phone, userId, upi: null }), {
@@ -35,12 +38,16 @@ export const Route = createFileRoute("/api/fetch-upi")({
         }
 
         try {
-          const lms = await lmsGetStudentVpaByPhone(phone);
+          const lms = await lmsGetStudentProfileByPhone(phone);
+          lmsName = lms.name;
+          lmsStudentId = lms.studentId;
+          lmsMobile = lms.mobile;
           if (lms.vpa) {
             return new Response(JSON.stringify({
               phone,
               userId,
               upi: lms.vpa,
+              name: lms.name,
               source: "lms",
               studentId: lms.studentId,
               mobile: lms.mobile,
@@ -68,7 +75,10 @@ export const Route = createFileRoute("/api/fetch-upi")({
             phone,
             userId,
             upi,
+            name: lmsName,
             source: upi ? "apps_script" : null,
+            studentId: lmsStudentId,
+            mobile: lmsMobile,
             ...(debug ? { lmsError } : {}),
           }), {
             status: 200, headers: { "Content-Type": "application/json", ...cors },
@@ -78,7 +88,10 @@ export const Route = createFileRoute("/api/fetch-upi")({
             phone,
             userId,
             upi: null,
+            name: lmsName,
             source: null,
+            studentId: lmsStudentId,
+            mobile: lmsMobile,
             ...(debug ? { lmsError } : {}),
           }), {
             status: 200, headers: { "Content-Type": "application/json", ...cors },

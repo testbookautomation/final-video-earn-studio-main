@@ -107,6 +107,13 @@ export async function lmsLogin(): Promise<string> {
 
 type UnknownRecord = Record<string, unknown>;
 
+export type LmsStudentProfile = {
+  studentId: string | null;
+  mobile: string | null;
+  name: string | null;
+  vpa: string | null;
+};
+
 function asRecord(value: unknown): UnknownRecord | null {
   return value && typeof value === "object" ? (value as UnknownRecord) : null;
 }
@@ -133,7 +140,38 @@ function firstArray(value: unknown): unknown[] {
 function getString(value: unknown, key: string): string | null {
   const record = asRecord(value);
   const found = record?.[key];
-  return typeof found === "string" && found.trim() ? found : null;
+  return typeof found === "string" && found.trim() ? found.trim() : null;
+}
+
+function firstString(value: unknown, keys: string[]): string | null {
+  for (const key of keys) {
+    const found = getString(value, key);
+    if (found) return found;
+  }
+  return null;
+}
+
+function fullNameFromParts(value: unknown): string | null {
+  const firstName = firstString(value, ["firstName", "first_name", "fname"]);
+  const lastName = firstString(value, ["lastName", "last_name", "lname"]);
+  const name = [firstName, lastName].filter(Boolean).join(" ").trim();
+  return name || null;
+}
+
+function profileRecord(value: unknown): UnknownRecord | null {
+  const record = asRecord(value);
+  const data = asRecord(record?.data) ?? record;
+  return asRecord(data?.student) ?? asRecord(data?.user) ?? data;
+}
+
+function extractStudentProfile(value: unknown): LmsStudentProfile {
+  const profile = profileRecord(value);
+  return {
+    studentId: firstString(profile, ["_id", "id", "studentId", "sid"]),
+    mobile: firstString(profile, ["mobile", "phone", "phoneNumber", "mobileNumber"]),
+    name: firstString(profile, ["name", "fullName", "full_name", "displayName"]) ?? fullNameFromParts(profile),
+    vpa: firstString(profile, ["vpa", "upi", "upiId", "upi_id"]),
+  };
 }
 
 function extractToken(value: unknown): string | null {
@@ -160,7 +198,7 @@ export function toLmsMobile(phone: string): string {
 export async function lmsFindStudentByMobile(
   token: string,
   phone: string,
-): Promise<{ id: string; mobile: string | null } | null> {
+): Promise<{ id: string; mobile: string | null; name: string | null } | null> {
   const mobile = toLmsMobile(phone);
   if (!mobile) return null;
 
@@ -192,7 +230,10 @@ export async function lmsFindStudentByMobile(
 
   const student = firstArray(data).map(asRecord).find(Boolean);
   const id = getString(student, "_id") ?? getString(student, "id");
-  return id ? { id, mobile: getString(student, "mobile") } : null;
+  const name =
+    firstString(student, ["name", "fullName", "full_name", "displayName"]) ??
+    fullNameFromParts(student);
+  return id ? { id, mobile: getString(student, "mobile"), name } : null;
 }
 
 export async function lmsGenerateStudentToken(
@@ -222,7 +263,7 @@ export async function lmsGenerateStudentToken(
   return studentToken;
 }
 
-export async function lmsGetStudentVpa(authCode: string): Promise<string | null> {
+export async function lmsGetStudentProfile(authCode: string): Promise<LmsStudentProfile> {
   const url = new URL(STUDENT_ME_API);
   url.searchParams.set("auth_code", authCode);
   url.searchParams.set("fields", "_id,name,mobile,vpa");
@@ -243,23 +284,31 @@ export async function lmsGetStudentVpa(authCode: string): Promise<string | null>
   try { data = JSON.parse(text); }
   catch { throw new Error(`Student profile response is not JSON: ${text.slice(0, 200)}`); }
 
-  const record = asRecord(data);
-  const profile = asRecord(record?.data) ?? record;
-  return getString(profile, "vpa");
+  return extractStudentProfile(data);
 }
 
-export async function lmsGetStudentVpaByPhone(phone: string): Promise<{
-  studentId: string | null;
-  mobile: string | null;
-  vpa: string | null;
-}> {
+export async function lmsGetStudentVpa(authCode: string): Promise<string | null> {
+  const profile = await lmsGetStudentProfile(authCode);
+  return profile.vpa;
+}
+
+export async function lmsGetStudentProfileByPhone(phone: string): Promise<LmsStudentProfile> {
   const token = await lmsLogin();
   const student = await lmsFindStudentByMobile(token, phone);
-  if (!student) return { studentId: null, mobile: toLmsMobile(phone), vpa: null };
+  if (!student) return { studentId: null, mobile: toLmsMobile(phone), name: null, vpa: null };
 
   const authCode = await lmsGenerateStudentToken(token, student.id);
-  const vpa = await lmsGetStudentVpa(authCode);
-  return { studentId: student.id, mobile: student.mobile, vpa };
+  const profile = await lmsGetStudentProfile(authCode);
+  return {
+    studentId: profile.studentId ?? student.id,
+    mobile: profile.mobile ?? student.mobile,
+    name: profile.name ?? student.name,
+    vpa: profile.vpa,
+  };
+}
+
+export async function lmsGetStudentVpaByPhone(phone: string): Promise<LmsStudentProfile> {
+  return lmsGetStudentProfileByPhone(phone);
 }
 
 /* ── LMS presigned URL ───────────────────────────────────── */

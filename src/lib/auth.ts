@@ -32,7 +32,7 @@ export type TBSubmission = {
   email: string;
   upi: string;
   examCategory: string;
-  platform: "instagram" | "youtube" | "facebook";
+  platform: "instagram" | "youtube";
   followers: string;
   videoMode: "upload" | "link";
   videoUrl: string;

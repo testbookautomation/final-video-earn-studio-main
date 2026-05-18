@@ -42,6 +42,7 @@ export const Route = createFileRoute("/api/submit")({
           const appsScriptPayload = {
             type:         "submit",
             token:        APPS_SCRIPT_TOKEN,
+            submissionId,
             name:         String(body.fullName     ?? ""),
             phone:        creatorPhone,
             userId:       creatorId,

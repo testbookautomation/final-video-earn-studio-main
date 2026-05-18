@@ -38,7 +38,7 @@ const sections = [
     title: "3. Campaign Participation",
     bullets: [
       "Each participant is allowed to submit one (1) video per campaign cycle. Duplicate or multiple submissions within the same campaign will be rejected.",
-      "To participate, log in to the Creators Lab portal using your Testbook account, record your video as per the guidelines provided, and upload it by tapping the Submit Video option on the portal homepage.",
+      "To participate, log in to the Creators Lab portal using your Testbook account, create your video as per the guidelines provided, and upload the final file by tapping the Send Video option on the portal homepage.",
       "All videos must be uploaded directly through the Creators Lab portal. Videos shared via email, social media links, or any other channel will not be considered as valid submissions.",
       "Testbook reserves the right to modify, pause, or discontinue any campaign at any time without prior notice.",
     ],
@@ -47,7 +47,7 @@ const sections = [
     id: "review",
     title: "4. Review & Approval",
     bullets: [
-      "All submitted videos are subject to review by the Testbook campaign team. Testbook reserves sole discretion to approve or reject any submission.",
+      "All submitted videos are subject to review by the Testbook campaign team. Testbook reserves sole discretion to approve, reject, edit, schedule, or publish any submission.",
       "The review process typically takes 24 to 48 hours from the time of submission, though this timeline is not guaranteed.",
       "If a video is rejected, the creator will be notified with the reason for rejection where possible. Testbook is not obligated to provide detailed feedback on every rejection.",
       "Testbook may request minor modifications to a submitted video before granting approval. The creator may choose to make the requested changes and resubmit, or withdraw the submission.",
@@ -69,7 +69,7 @@ const sections = [
     title: "6. Payouts",
     bullets: [
       "Payout eligibility is determined solely by Testbook based on the campaign criteria in effect at the time of submission.",
-      "Eligible payouts will be processed within 5 to 7 working days from the date the video is confirmed as eligible.",
+      "Eligible payouts will be processed within 5 to 7 working days from the date the Testbook-published video is confirmed as eligible.",
       "All payouts will be made directly to the UPI ID linked to your Testbook account. It is your responsibility to ensure that your UPI details are accurate and up to date in the Testbook app before your video becomes eligible for payout.",
       "Testbook is not responsible for failed, delayed, or misdirected payments resulting from incorrect or outdated UPI information provided by the creator.",
       "Payout amounts are determined by Testbook at its sole discretion based on the applicable campaign tier and guidelines. Payout amounts mentioned on the Creators Lab portal or campaign materials are indicative and do not constitute a guarantee.",
@@ -85,7 +85,7 @@ const sections = [
       "Attempting to manipulate view counts, engagement metrics, or any campaign performance data through artificial or fraudulent means.",
       "Using automated tools, bots, or scripts to interact with the Creators Lab portal.",
       "Engaging in any behaviour that is abusive, threatening, or harmful to other participants, Testbook staff, or the campaign community.",
-      "Deleting or making the submitted video inaccessible after submission and before the review and payout process is complete.",
+      "Attempting to revoke, restrict, or interfere with Testbook's approved use of a submitted video before the review and payout process is complete.",
     ],
   },
   {
@@ -109,7 +109,7 @@ const sections = [
     id: "modifications",
     title: "10. Modifications to These Terms",
     body: [
-      "Testbook reserves the right to update, modify, or replace these Terms & Conditions at any time. Any changes will be posted on the Creators Lab portal. Your continued participation in the campaign after any such changes constitutes your acceptance of the revised terms. It is your responsibility to review these terms periodically.",
+      "Testbook reserves the right to update, modify, or replace these Terms & Conditions at any time. Any changes will be shown on the Creators Lab portal. Your continued participation in the campaign after any such changes constitutes your acceptance of the revised terms. It is your responsibility to review these terms periodically.",
     ],
   },
   {
@@ -140,9 +140,9 @@ function TermsPage() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-14 md:py-20 fade-up">
           <div className="flex items-center gap-3 mb-4">
             <img
-              src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
+              src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
               alt="Testbook"
-              className="h-7 w-auto brightness-0 invert opacity-90"
+              className="h-7 w-auto opacity-90"
             />
           </div>
           <span className="badge bg-white/10 text-white border-white/20">
@@ -156,7 +156,7 @@ function TermsPage() {
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link to="/submit" className="btn-orange">
-              I Agree — Submit video <ChevronRight className="size-4" />
+              I Agree - Send video <ChevronRight className="size-4" />
             </Link>
             <Link to="/" className="btn-ghost bg-white/10 border-white/20 text-white hover:bg-white/15 hover:text-white">
               Back to home

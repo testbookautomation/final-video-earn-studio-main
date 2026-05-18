@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight, IndianRupee, Users, Trophy, Sparkles, CheckCircle2,
-  LogIn, Video, Upload, ShieldCheck, Wallet, ChevronDown, Hash,
+  ArrowRight, IndianRupee, Users, Trophy, CheckCircle2,
+  LogIn, Video, Upload, ShieldCheck, Wallet, ChevronDown, ListChecks,
   Zap, Clock, X,
 } from "lucide-react";
 import { track } from "@/lib/analytics";
@@ -10,10 +10,10 @@ import { track } from "@/lib/analytics";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Testbook Creator Lab — Earn UPI for promoting Testbook Pass" },
-      { name: "description", content: "Submit a short video promoting Testbook Pass and earn ₹500 to ₹25,000 via UPI based on view milestones. Built for India's student creators." },
-      { property: "og:title", content: "Testbook Creator Lab — Earn UPI for promoting Testbook Pass" },
-      { property: "og:description", content: "Submit a short video promoting Testbook Pass and earn UPI payouts based on view milestones." },
+      { title: "Testbook Creator Lab - Create videos Testbook can publish" },
+      { name: "description", content: "Create a short video for Testbook Pass, upload it to Testbook, and earn ₹500 to ₹25,000 via UPI when Testbook-published videos cross view milestones." },
+      { property: "og:title", content: "Testbook Creator Lab - Create videos Testbook can publish" },
+      { property: "og:description", content: "Upload your creator video to Testbook. We publish approved videos and pay UPI payouts based on view milestones." },
       { property: "og:url", content: "/" },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -22,11 +22,11 @@ export const Route = createFileRoute("/")({
 });
 
 const steps = [
-  { Icon: LogIn,       title: "Login with phone",  desc: "OTP login in 30 seconds. Set up your UPI ID right away." },
-  { Icon: Video,       title: "Record your reel",  desc: "30–60 second vertical video pitching Testbook Pass." },
-  { Icon: Upload,      title: "Upload & submit",   desc: "Upload your reel file directly from your device." },
-  { Icon: ShieldCheck, title: "Team approves",     desc: "Our team verifies content quality within 24 hours." },
-  { Icon: Wallet,      title: "UPI payout",        desc: "Cross a view milestone → instant UPI transfer to you." },
+  { Icon: LogIn,       title: "Login with phone",  desc: "OTP login in 30 seconds. Your linked UPI is checked automatically." },
+  { Icon: Video,       title: "Create your video", desc: "Record a 30–60 second vertical video pitching Testbook Pass." },
+  { Icon: Upload,      title: "Send it to us",     desc: "Upload the finished video file directly to Testbook." },
+  { Icon: ShieldCheck, title: "We publish it",     desc: "Our team reviews, approves, and publishes selected videos." },
+  { Icon: Wallet,      title: "UPI payout",        desc: "Views on the Testbook-published video unlock payouts." },
 ];
 
 const tiers = [
@@ -41,7 +41,7 @@ const dos = [
   "Speak in your audience's language — Hindi or regional languages are great",
   "Show the Testbook app on screen while talking",
   "Mention the specific exam you're preparing for",
-  "Use the campaign hashtag #TestbookPass in your caption",
+  "Upload a clean, final video that Testbook can publish",
 ];
 const donts = [
   "Don't fake reviews or buy views — instant disqualification",
@@ -51,9 +51,9 @@ const donts = [
 ];
 
 const faqs = [
-  { q: "Who can apply to Creator Lab?", a: "Any student or aspirant in India with a public Instagram, YouTube, or Facebook profile. Min 500 followers recommended but not mandatory — content quality matters more." },
-  { q: "When do I get paid?", a: "Within 48 hours of crossing each view milestone. Payouts are sent directly to the UPI ID linked to your phone number." },
-  { q: "Can I post the same video on multiple platforms?", a: "Yes. Submit one platform per entry — your highest-performing post will be considered for payout." },
+  { q: "Who can apply to Creator Lab?", a: "Any student or aspirant in India with a public Instagram or YouTube profile. Min 500 followers recommended but not mandatory — content quality matters more." },
+  { q: "When do I get paid?", a: "Within 48 hours of the Testbook-published video crossing each view milestone. Payouts are sent directly to the UPI ID linked to your phone number." },
+  { q: "Can I submit more than one video?", a: "Yes. Upload each finished video as a separate entry. Testbook will review and decide which videos to publish." },
   { q: "What if my video is rejected?", a: "You'll get a reason in your dashboard. You can revise and resubmit. We approve ~85% of submissions on the first try." },
   { q: "Is there a follower count requirement?", a: "No minimum follower count is required. We care more about content quality and authentic reach than follower numbers." },
 ];
@@ -71,18 +71,15 @@ function HomePage() {
         <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,white_0,transparent_40%),radial-gradient(circle_at_80%_60%,#60a5fa_0,transparent_40%)]" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-20 md:pt-20 md:pb-28 grid lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-7 fade-up">
-            <span className="badge bg-white/10 text-white border-white/20 text-xs">
-              <Sparkles className="size-3.5" /> Creator Campaign · 2026
-            </span>
-            <h1 className="mt-5 text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tb-text-gradient">
-              Make a reel.<br />Promote Testbook Pass.<br />Get paid in UPI.
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tb-text-gradient">
+              Create the video.<br />Send it to Testbook.<br />We publish and pay.
             </h1>
             <p className="mt-5 text-base md:text-lg text-white/85 max-w-xl leading-relaxed">
-              Join <strong className="text-white">12,000+ student creators</strong> earning ₹500 to ₹25,000 per video — based on real view milestones, paid directly to your UPI account.
+              Join <strong className="text-white">12,000+ student creators</strong> making publish-ready videos for Testbook Pass. Upload the file to us, we publish approved videos, and payouts go directly to your UPI account.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link to="/submit" className="btn-orange text-base px-6 py-3.5">
-                Submit your video <ArrowRight className="size-4" />
+                Send your video <ArrowRight className="size-4" />
               </Link>
               <Link to="/sop" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/18 hover:text-white text-base px-6 py-3.5">
                 Read Creator SOP
@@ -111,16 +108,16 @@ function HomePage() {
           <div className="lg:col-span-5 fade-up">
             <div className="card p-6 bg-white text-foreground">
               <div className="flex items-center justify-between">
-                <span className="badge badge-orange text-xs"><Hash className="size-3.5" /> Creator Brief</span>
+                <span className="badge badge-orange text-xs"><ListChecks className="size-3.5" /> Creator Brief</span>
                 <span className="text-xs text-muted-foreground font-medium">Updated this week</span>
               </div>
-              <h3 className="mt-4 text-lg font-bold text-tb-navy">Promote Testbook Pass — All Exams</h3>
-              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">A 30–60 second honest reel showing why Testbook Pass works for your exam.</p>
+              <h3 className="mt-4 text-lg font-bold text-tb-navy">Create for Testbook Pass - All Exams</h3>
+              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">A 30–60 second publish-ready video showing why Testbook Pass works for your exam.</p>
               <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                 <Brief k="Format" v="Vertical 9:16" />
                 <Brief k="Duration" v="30–60 seconds" />
-                <Brief k="Platforms" v="Instagram · YouTube · Facebook" />
-                <Brief k="Hashtag" v="#TestbookPass" />
+                <Brief k="Audience" v="Instagram · YouTube" />
+                <Brief k="Publishing" v="Handled by Testbook" />
               </div>
               <div className="mt-4 p-3.5 rounded-xl bg-blue-50 border border-blue-100">
                 <div className="text-xs font-bold text-tb-navy mb-1.5 uppercase tracking-wide">Hook idea</div>
@@ -137,7 +134,7 @@ function HomePage() {
         <div className="text-center max-w-2xl mx-auto">
           <span className="badge text-xs"><CheckCircle2 className="size-3.5" /> How it works</span>
           <h2 className="mt-4 text-3xl md:text-4xl font-bold text-tb-navy">5 steps from idea to UPI</h2>
-          <p className="mt-3 text-base text-muted-foreground">No middlemen. No long forms. You record, we pay.</p>
+          <p className="mt-3 text-base text-muted-foreground">You create the video. You give it to us. Testbook publishes approved videos.</p>
         </div>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {steps.map((s, i) => (
@@ -261,14 +258,14 @@ function HomePage() {
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-4">
               <Clock className="size-5 text-white/70" />
-              <span className="text-white/70 text-sm font-medium">Submit in under 5 minutes</span>
+              <span className="text-white/70 text-sm font-medium">Send in under 5 minutes</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-bold tb-text-gradient">Your phone is your studio.</h2>
             <p className="mt-4 text-white/80 max-w-xl mx-auto text-base leading-relaxed">
-              Record a 30–60 second reel today. Payouts hit your UPI within 48 hours of crossing a milestone.
+              Record a 30–60 second video today, upload it to Testbook, and let our team publish approved videos for milestone payouts.
             </p>
             <div className="mt-8 flex flex-wrap gap-3 justify-center">
-              <Link to="/submit" className="btn-orange text-base px-8 py-3.5">Submit your video <ArrowRight className="size-4" /></Link>
+              <Link to="/submit" className="btn-orange text-base px-8 py-3.5">Send your video <ArrowRight className="size-4" /></Link>
               <Link to="/login" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">Login first</Link>
             </div>
           </div>

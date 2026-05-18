@@ -5,7 +5,7 @@ import {
   Wallet, Send, FileText, Sparkles, AlertCircle, PartyPopper,
   ShieldCheck, XCircle, ExternalLink, RefreshCw,
 } from "lucide-react";
-import { getSubmission, getSubmissions, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
+import { getSubmission, getSubmissions, getUser, saveSubmission, setUser, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -28,8 +28,6 @@ const milestones = [
   { v: 1000000, label: "10L",  pay: 25000 },
 ];
 
-const FIRST_PAYOUT_VIEWS = milestones[0]?.v ?? 10000;
-
 function earnedPayoutInr(views: number): number {
   return milestones
     .filter((milestone) => views >= milestone.v)
@@ -39,8 +37,8 @@ function earnedPayoutInr(views: number): number {
 const timeline: { key: SubmissionStatus; label: string; desc: string }[] = [
   { key: "submitted",         label: "Submitted",        desc: "Video received" },
   { key: "under_review",      label: "Under review",     desc: "Team is verifying" },
-  { key: "approved",          label: "Approved",         desc: "Cleared for tracking" },
-  { key: "live",              label: "Tracking live",    desc: "Views being counted" },
+  { key: "approved",          label: "Approved",         desc: "Cleared to publish" },
+  { key: "live",              label: "Published",        desc: "Views being tracked" },
   { key: "milestone_reached", label: "Milestone hit",    desc: "Payout queued" },
   { key: "paid",              label: "Paid via UPI",     desc: "Money sent" },
 ];
@@ -73,22 +71,9 @@ function isPaidPayoutStatus(value?: string): boolean {
   return ["paid", "completed", "success"].includes(normalizedPayoutStatus(value));
 }
 
-function isQueuedPayoutStatus(value?: string): boolean {
-  return ["initiated", "processing", "queued", "pending"].includes(normalizedPayoutStatus(value));
-}
-
-function effectiveStatus(submission: Pick<TBSubmission, "status" | "views" | "payoutEligibility" | "payoutStatus">): SubmissionStatus {
+function effectiveStatus(submission: Pick<TBSubmission, "status" | "payoutStatus">): SubmissionStatus {
   if (submission.status === "rejected") return "rejected";
   if (submission.status === "paid" || isPaidPayoutStatus(submission.payoutStatus)) return "paid";
-  if (
-    submission.status === "milestone_reached" ||
-    isEligible(submission.payoutEligibility) ||
-    isQueuedPayoutStatus(submission.payoutStatus) ||
-    ((submission.status === "approved" || submission.status === "live") && submission.views >= FIRST_PAYOUT_VIEWS)
-  ) {
-    return "milestone_reached";
-  }
-  if (submission.status === "live" || (submission.status === "approved" && submission.views > 0)) return "live";
   return submission.status;
 }
 
@@ -148,11 +133,16 @@ function paymentLabel(submission: TBSubmission): string {
   return "Not eligible yet";
 }
 
+function displayUserName(name: string, phone: string): string {
+  return name.trim() || (phone ? `+91 ${phone}` : "Creator");
+}
+
 function DashboardPage() {
   const [submission, setSubmission] = useState<TBSubmission | null>(null);
   const [submissions, setSubmissions] = useState<TBSubmission[]>([]);
   const [phone, setPhone] = useState("");
   const [userId, setUserId] = useState("");
+  const [userName, setUserName] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
@@ -161,6 +151,7 @@ function DashboardPage() {
     if (u) {
       setPhone(u.phone);
       setUserId(u.userId ?? u.phone);
+      setUserName(u.name ?? "");
     }
     setSubmission(getSubmission());
     setSubmissions(getSubmissions());
@@ -171,6 +162,35 @@ function DashboardPage() {
     window.addEventListener("tb:submission", sync);
     return () => window.removeEventListener("tb:submission", sync);
   }, []);
+
+  useEffect(() => {
+    if (!phone || userName) return;
+
+    let cancelled = false;
+    fetch(`/api/fetch-upi?phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId || phone)}`)
+      .then((r) => r.json())
+      .then((data: { name?: string | null; studentId?: string | null }) => {
+        const name = data.name?.trim();
+        if (!name || cancelled) return;
+
+        setUserName(name);
+        const user = getUser();
+        if (user) {
+          setUser({
+            ...user,
+            name,
+            userId: user.userId || data.studentId || userId || phone,
+          });
+        }
+      })
+      .catch(() => {
+        /* Name is nice-to-have; dashboard can still load with phone fallback. */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [phone, userId, userName]);
 
   // Poll Apps Script for real status — on mount, every 30s, and on tab focus
   useEffect(() => {
@@ -259,9 +279,10 @@ function DashboardPage() {
   }, [phone, userId]);
 
   if (!submission) {
-    return <EmptyState phone={phone} />;
+    return <EmptyState phone={phone} name={userName} />;
   }
 
+  const displayName = displayUserName(userName, phone);
   const displayStatus = effectiveStatus(submission);
   const earnedAmount = displayPayoutInr(submission);
   const stage = order.indexOf(displayStatus);
@@ -273,216 +294,260 @@ function DashboardPage() {
     ? Math.min(100, ((submission.views - (lastMilestone?.v ?? 0)) / (nextMilestone.v - (lastMilestone?.v ?? 0))) * 100)
     : 100;
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 sm:px-6 py-10 md:py-14 space-y-6">
-      <div className="fade-up flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="badge text-xs"><Sparkles className="size-3.5" /> Welcome back · +91 {phone}</span>
-            {syncing && <span className="text-xs text-muted-foreground animate-pulse flex items-center gap-1"><RefreshCw className="size-3 animate-spin" /> Syncing…</span>}
-            {syncError && !syncing && (
-              <span className="text-xs text-amber-600 flex items-center gap-1">
-                <AlertCircle className="size-3" /> {syncError}
-              </span>
-            )}
-          </div>
-          <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Your submission</h1>
-          <p className="mt-2 text-base text-muted-foreground">Live status, view milestones and payout — all in one place.</p>
-        </div>
-        <Link
-          to="/submit"
-          className="btn-orange inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm sm:w-auto md:mt-1"
-        >
-          <Send className="size-4" />
-          Submit another video
-          <ArrowRight className="size-4" />
-        </Link>
-      </div>
+  const statusMeta = {
+    rejected:          { bg: "bg-red-100",     icon: <XCircle className="size-7 text-red-600" />,      label: "Rejected",         msg: submission.rejectionReason || "Your video didn't meet our guidelines this time." },
+    submitted:         { bg: "bg-blue-50",      icon: <Clock className="size-7 text-tb-blue" />,        label: "Submitted",        msg: "We received your video and it's in the queue." },
+    under_review:      { bg: "bg-amber-50",     icon: <RefreshCw className="size-7 text-amber-500" />,  label: "Under Review",     msg: "Our team is verifying your video — usually done within 24 hours." },
+    approved:          { bg: "bg-emerald-50",   icon: <CheckCircle2 className="size-7 text-emerald-600" />, label: "Approved",    msg: "Your video passed review. Views are now being tracked." },
+    live:              { bg: "bg-emerald-50",   icon: <Sparkles className="size-7 text-emerald-600" />, label: "Live & Tracking",  msg: "Your video is live — cross a milestone to unlock a payout." },
+    milestone_reached: { bg: "bg-violet-50",   icon: <PartyPopper className="size-7 text-violet-600" />,label: "Milestone Hit",   msg: "You crossed a payout milestone! Transfer will hit your UPI within 48h." },
+    paid:              { bg: "bg-emerald-50",   icon: <PartyPopper className="size-7 text-emerald-600" />, label: "Paid via UPI", msg: "Money has been sent to your UPI account. Congratulations!" },
+  } as const;
+  const sm = statusMeta[displayStatus] ?? statusMeta["submitted"];
 
-      {/* Rejection reason banner */}
-      {isRejected && submission.rejectionReason && (
-        <div className="card p-5 !border-red-200 bg-red-50/50 flex items-start gap-3 fade-up">
-          <XCircle className="size-5 text-red-600 shrink-0 mt-0.5" />
-          <div>
-            <div className="text-sm font-bold text-red-800">Reason for rejection</div>
-            <div className="text-sm text-red-700 mt-1 leading-relaxed">{submission.rejectionReason}</div>
-            <Link to="/submit" className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors px-3 py-1.5 rounded-lg">
-              Resubmit video <ArrowRight className="size-3.5" />
+  return (
+    <div className="min-h-screen bg-tb-bg">
+
+      {/* ── Hero header band ── */}
+      <div className="tb-gradient text-white relative overflow-hidden">
+        <div className="absolute inset-0 dot-grid opacity-20" />
+        <div className="absolute -top-20 -right-20 size-64 rounded-full bg-blue-400/20 blur-3xl" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 py-8 md:py-10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="size-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-2xl font-black text-white select-none shrink-0">
+                {displayName[0]?.toUpperCase() ?? "C"}
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-widest text-white/50">Creator Dashboard</div>
+                <h1 className="text-xl md:text-2xl font-bold text-white mt-0.5">{displayName}</h1>
+                <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    isRejected ? "bg-red-400/20 text-red-200" :
+                    displayStatus === "paid" ? "bg-emerald-400/20 text-emerald-200" :
+                    "bg-white/15 text-white/80"
+                  }`}>
+                    <span className={`size-1.5 rounded-full ${isRejected ? "bg-red-400" : displayStatus === "paid" ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
+                    {sm.label}
+                  </span>
+                  {syncing && <span className="text-xs text-white/50 flex items-center gap-1"><RefreshCw className="size-3 animate-spin" /> Syncing…</span>}
+                  {syncError && !syncing && <span className="text-xs text-amber-300 flex items-center gap-1"><AlertCircle className="size-3" /> {syncError}</span>}
+                </div>
+              </div>
+            </div>
+            <Link to="/submit" className="btn-orange inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm self-start sm:self-auto shrink-0">
+              <Send className="size-4" /> Submit another video
             </Link>
           </div>
         </div>
-      )}
-
-      {/* Payment eligibility banner */}
-      {isPaymentEligible && !isRejected && displayStatus !== "paid" && (
-        <div className="card p-4 !border-emerald-200 bg-emerald-50/40 flex items-center gap-3 fade-up">
-          <div className="size-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-            <ShieldCheck className="size-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-emerald-800">Payment eligible</div>
-            <div className="text-sm text-emerald-700/80 mt-0.5">Your submission has been approved for UPI payout. Transfer will be initiated within 48 hours.</div>
-          </div>
-          {earnedAmount > 0 && (
-            <div className="text-right shrink-0">
-              <div className="text-xs text-emerald-700 font-medium">Amount</div>
-              <div className="text-lg font-black text-emerald-800">₹{earnedAmount.toLocaleString("en-IN")}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Status banner */}
-      <div className={`card p-5 flex flex-wrap items-center gap-4 ${isRejected ? "!border-red-200 bg-red-50/40" : ""}`}>
-        <div className={`size-12 rounded-xl flex items-center justify-center shrink-0 ${
-          isRejected ? "bg-red-100 text-red-700" :
-          displayStatus === "paid" ? "bg-emerald-100 text-emerald-700" :
-          "tb-gradient text-white"
-        }`}>
-          {isRejected ? <AlertCircle className="size-6" /> :
-           displayStatus === "paid" ? <PartyPopper className="size-6" /> :
-           <Clock className="size-6" />}
-        </div>
-        <div className="flex-1 min-w-[160px]">
-          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Current status</div>
-          <div className="text-xl font-bold text-tb-navy capitalize mt-0.5">{displayStatus.replace(/_/g, " ")}</div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Video approved badge */}
-          {(displayStatus === "approved" || displayStatus === "live" || displayStatus === "milestone_reached" || displayStatus === "paid") && (
-            <span className="badge badge-green text-xs">
-              <CheckCircle2 className="size-3" /> Video approved
-            </span>
-          )}
-          {/* Payment eligible badge */}
-          {isPaymentEligible && (
-            <span className="badge badge-green text-xs">
-              <ShieldCheck className="size-3" /> Payment eligible
-            </span>
-          )}
-          {submission.videoUrl && (
-            <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="btn-ghost text-sm">View post ↗</a>
-          )}
-        </div>
       </div>
 
-      {/* Timeline */}
-      {!isRejected && (
-        <div className="card p-6">
-          <div className="text-base font-bold text-tb-navy mb-4">Submission timeline</div>
-          <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {timeline.map((t, i) => {
-              const reached = i <= stage;
-              const current = i === stage;
-              return (
-                <li key={t.key} className={`relative rounded-xl p-4 border transition ${
-                  reached ? "border-tb-blue/40 bg-blue-50/50" : "border-border bg-white"
-                } ${current ? "ring-2 ring-tb-blue/40 shadow-sm" : ""}`}>
-                  <div className={`size-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                    reached ? "tb-gradient text-white" : "bg-secondary text-muted-foreground"
-                  }`}>
-                    {reached ? <CheckCircle2 className="size-4" /> : i + 1}
-                  </div>
-                  <div className={`mt-2.5 text-sm font-bold ${reached ? "text-tb-navy" : "text-muted-foreground"}`}>{t.label}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-snug">{t.desc}</div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 space-y-5">
 
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Views progress */}
-        <div className="card p-6 lg:col-span-2">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground font-medium">Total views</div>
-              <div className="text-4xl font-black text-tb-navy mt-0.5">{submission.views.toLocaleString("en-IN")}</div>
+        {/* ── Rejection banner ── */}
+        {isRejected && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 flex items-start gap-4 fade-up">
+            <div className="size-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+              <XCircle className="size-5 text-red-600" />
             </div>
-            {nextMilestone ? (
-              <div className="text-right">
-                <div className="text-xs text-muted-foreground font-medium">Next payout at</div>
-                <div className="text-sm font-bold text-tb-blue mt-0.5">{nextMilestone.label} views</div>
-                <div className="text-base font-black text-tb-orange">₹{nextMilestone.pay.toLocaleString("en-IN")}</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-red-800">Video rejected</div>
+              <div className="text-sm text-red-700 mt-1 leading-relaxed">{submission.rejectionReason || "Your video didn't meet our content guidelines."}</div>
+            </div>
+            <Link to="/submit" className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors px-3 py-2 rounded-lg">
+              Resubmit <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+        )}
+
+        {/* ── Payment eligible banner ── */}
+        {isPaymentEligible && !isRejected && displayStatus !== "paid" && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-4 fade-up">
+            <div className="size-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+              <ShieldCheck className="size-5 text-emerald-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-emerald-800">Payment eligible</div>
+              <div className="text-sm text-emerald-700/80 mt-0.5">UPI transfer will be initiated within 48 hours.</div>
+            </div>
+            {earnedAmount > 0 && (
+              <div className="shrink-0 text-right">
+                <div className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wide">Amount</div>
+                <div className="text-xl font-black text-emerald-800">₹{earnedAmount.toLocaleString("en-IN")}</div>
               </div>
-            ) : (
-              <div className="badge badge-green text-sm px-3 py-1.5">Max tier reached 🎉</div>
             )}
           </div>
-          <div className="mt-5 h-3 rounded-full bg-secondary overflow-hidden">
-            <div className="h-full tb-gradient relative shimmer rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
-          </div>
-          <div className="mt-2 flex justify-between text-xs text-muted-foreground font-medium">
-            <span>{(lastMilestone?.label ?? "0")} views</span>
-            <span>{nextMilestone ? `${nextMilestone.label} views` : "10L+"}</span>
-          </div>
+        )}
 
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            <Stat Icon={Eye} label="Views" value={submission.views.toLocaleString("en-IN")} />
-            <Stat Icon={Heart} label="Likes" value={submission.likes.toLocaleString("en-IN")} />
-            <Stat Icon={MessageCircle} label="Comments" value={submission.comments.toLocaleString("en-IN")} />
-          </div>
-        </div>
-
-        {/* Payout */}
-        <div className="card p-6 tb-gradient text-white relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="badge bg-white/15 text-white border-white/20"><Wallet className="size-3.5" /> Payout</div>
+        {/* ── Status + Timeline card ── */}
+        <div className="card overflow-hidden fade-up">
+          {/* Status row */}
+          <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 border-b border-border">
+            <div className={`size-14 rounded-2xl ${sm.bg} flex items-center justify-center shrink-0`}>
+              {sm.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Current status</div>
+              <div className="text-2xl font-black text-tb-navy mt-0.5">{sm.label}</div>
+              <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{sm.msg}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 shrink-0">
+              {(displayStatus === "approved" || displayStatus === "live" || displayStatus === "milestone_reached" || displayStatus === "paid") && (
+                <span className="badge badge-green text-xs"><CheckCircle2 className="size-3" /> Video approved</span>
+              )}
               {isPaymentEligible && (
-                <div className="badge bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-xs">
-                  <CheckCircle2 className="size-3" /> Eligible
-                </div>
+                <span className="badge badge-green text-xs"><ShieldCheck className="size-3" /> Payment eligible</span>
+              )}
+              {submission.videoUrl && (
+                <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="badge hover:bg-blue-50 text-xs text-tb-blue">
+                  View video <ExternalLink className="size-3" />
+                </a>
               )}
             </div>
-            <div className="mt-3 text-xs text-white/70">{displayStatus === "paid" ? "Sent to" : "Will be sent to"}</div>
-            <div className="font-semibold truncate">{submission.upi || "Not added"}</div>
-            <div className="mt-5 text-4xl font-bold tb-text-gradient flex items-center gap-1">
-              <IndianRupee className="size-7" />{earnedAmount.toLocaleString("en-IN")}
+          </div>
+
+          {/* Timeline */}
+          {!isRejected && (
+            <div className="p-5 sm:p-6 bg-secondary/30">
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Progress</div>
+              <div className="relative">
+                {/* connector line */}
+                <div className="absolute top-4 left-4 right-4 h-0.5 bg-border hidden sm:block" />
+                <div className="absolute top-4 left-4 h-0.5 bg-tb-blue hidden sm:block transition-all duration-700"
+                  style={{ width: stage >= 0 ? `${Math.min(((stage) / (timeline.length - 1)) * 100, 100)}%` : "0%" }} />
+                <ol className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-0 relative">
+                  {timeline.map((t, i) => {
+                    const reached = i <= stage;
+                    const current = i === stage;
+                    return (
+                      <li key={t.key} className="flex flex-col items-center text-center sm:px-1">
+                        <div className={`relative size-8 rounded-full flex items-center justify-center text-xs font-bold border-2 z-10 transition-all ${
+                          reached ? "tb-gradient text-white border-tb-blue shadow-sm shadow-blue-200" :
+                          current ? "border-tb-blue text-tb-blue bg-white" :
+                          "border-border bg-white text-muted-foreground"
+                        }`}>
+                          {reached ? <CheckCircle2 className="size-4" /> : i + 1}
+                        </div>
+                        <div className={`mt-2 text-xs font-bold leading-tight ${current ? "text-tb-blue" : reached ? "text-tb-navy" : "text-muted-foreground"}`}>
+                          {t.label}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight hidden sm:block">{t.desc}</div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
             </div>
-            <div className="mt-1 text-xs text-white/70">
-              {displayStatus === "paid"              ? "Transferred via UPI" :
-               displayStatus === "milestone_reached" ? "Queued for transfer (within 48h)" :
-               isPaymentEligible                         ? "Transfer initiated — within 48h" :
-               "Cross a milestone to unlock"}
+          )}
+        </div>
+
+        {/* ── Metrics + Payout ── */}
+        <div className="grid lg:grid-cols-3 gap-5">
+
+          {/* Views & engagement */}
+          <div className="card p-6 lg:col-span-2 space-y-5 fade-up">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Total views</div>
+                <div className="text-5xl font-black text-tb-navy mt-1 leading-none">{submission.views.toLocaleString("en-IN")}</div>
+              </div>
+              {nextMilestone ? (
+                <div className="text-right shrink-0 bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <div className="text-[10px] font-bold text-tb-blue uppercase tracking-wide">Next payout</div>
+                  <div className="text-sm font-bold text-tb-navy mt-0.5">{nextMilestone.label} views</div>
+                  <div className="text-lg font-black text-tb-orange">₹{nextMilestone.pay.toLocaleString("en-IN")}</div>
+                </div>
+              ) : (
+                <div className="badge badge-green px-3 py-1.5 text-sm">Max tier 🎉</div>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            <div>
+              <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+                <div className="h-full tb-gradient shimmer rounded-full transition-all duration-700" style={{ width: `${progressPct}%` }} />
+              </div>
+              <div className="mt-1.5 flex justify-between text-xs text-muted-foreground font-medium">
+                <span>{lastMilestone?.label ?? "0"} views</span>
+                <span className="text-tb-blue font-semibold">{progressPct.toFixed(0)}% to next</span>
+                <span>{nextMilestone ? `${nextMilestone.label} views` : "10L+"}</span>
+              </div>
+            </div>
+
+            {/* Engagement stats */}
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <Stat Icon={Eye}           label="Views"    value={submission.views.toLocaleString("en-IN")} color="blue" />
+              <Stat Icon={Heart}         label="Likes"    value={submission.likes.toLocaleString("en-IN")} color="rose" />
+              <Stat Icon={MessageCircle} label="Comments" value={submission.comments.toLocaleString("en-IN")} color="violet" />
+            </div>
+          </div>
+
+          {/* Payout card */}
+          <div className="card tb-gradient text-white relative overflow-hidden fade-up">
+            <div className="absolute -top-12 -right-12 size-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 size-32 rounded-full bg-indigo-700/20 blur-2xl pointer-events-none" />
+            <div className="relative p-6 flex flex-col h-full justify-between gap-6">
+              <div>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="badge bg-white/15 text-white border-white/20 text-xs"><Wallet className="size-3.5" /> UPI Payout</div>
+                  {isPaymentEligible && (
+                    <div className="badge bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-xs"><CheckCircle2 className="size-3" /> Eligible</div>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-white/50">
+                    {displayStatus === "paid" ? "Sent to" : "Sending to"}
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-white/90 truncate bg-white/10 px-3 py-2 rounded-lg">
+                    {submission.upi || "UPI not added"}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Total earned</div>
+                <div className="flex items-end gap-1">
+                  <span className="text-2xl font-bold text-white/60">₹</span>
+                  <span className="text-5xl font-black text-white leading-none">{earnedAmount.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="mt-2 text-xs text-white/60 leading-relaxed">
+                  {displayStatus === "paid"              ? "✓ Transferred to your UPI" :
+                   displayStatus === "milestone_reached" ? "⏳ Queued — arrives within 48h" :
+                   isPaymentEligible                     ? "⏳ Initiated — arrives within 48h" :
+                   "Cross 10K views to unlock ₹500"}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <UploadedVideos submissions={submissions} />
+        <UploadedVideos submissions={submissions} />
 
-      {/* Quick actions */}
-      <div className="card p-6">
-        <div className="text-base font-bold text-tb-navy mb-4">Quick actions</div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <Link to="/submit" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
-            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><Send className="size-5" /></div>
-            <div>
-              <div className="text-sm font-bold text-tb-navy">Submit another video</div>
-              <div className="text-sm text-muted-foreground mt-0.5">More videos = more payouts</div>
+        {/* ── Quick actions ── */}
+        <div className="grid sm:grid-cols-2 gap-3 fade-up">
+          <Link to="/submit" className="card p-5 flex items-center gap-4 hover:border-tb-blue hover:shadow-md transition-all group">
+            <div className="size-12 rounded-xl tb-gradient text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Send className="size-5" />
             </div>
+            <div>
+              <div className="font-bold text-tb-navy">Submit another video</div>
+              <div className="text-sm text-muted-foreground mt-0.5">More videos = more milestones = more payouts</div>
+            </div>
+            <ArrowRight className="size-4 text-muted-foreground ml-auto shrink-0 group-hover:text-tb-blue transition-colors" />
           </Link>
-          <Link to="/sop" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
-            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><FileText className="size-5" /></div>
-            <div>
-              <div className="text-sm font-bold text-tb-navy">Re-read Creator SOP</div>
-              <div className="text-sm text-muted-foreground mt-0.5">Boost your approval rate</div>
+          <Link to="/sop" className="card p-5 flex items-center gap-4 hover:border-tb-blue hover:shadow-md transition-all group">
+            <div className="size-12 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileText className="size-5" />
             </div>
+            <div>
+              <div className="font-bold text-tb-navy">Re-read Creator SOP</div>
+              <div className="text-sm text-muted-foreground mt-0.5">Tips that boost your approval rate to 90%+</div>
+            </div>
+            <ArrowRight className="size-4 text-muted-foreground ml-auto shrink-0 group-hover:text-tb-blue transition-colors" />
           </Link>
-          <a href="mailto:creators@testbook.com" className="flex items-start gap-3.5 p-4 rounded-xl border border-border hover:border-tb-blue hover:bg-blue-50/40 transition-all">
-            <div className="size-10 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0"><ArrowRight className="size-5" /></div>
-            <div>
-              <div className="text-sm font-bold text-tb-navy">Contact support</div>
-              <div className="text-sm text-muted-foreground mt-0.5">creators@testbook.com</div>
-            </div>
-          </a>
         </div>
-      </div>
 
-    </section>
+      </div>
+    </div>
   );
 }
 
@@ -494,7 +559,7 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <div className="text-base font-bold text-tb-navy">Uploaded videos</div>
-          <div className="text-sm text-muted-foreground mt-0.5">Previous submissions, review status and payout state.</div>
+          <div className="text-sm text-muted-foreground mt-0.5">Previous uploads, review status and payout state.</div>
         </div>
         <span className="badge text-xs">{submissions.length} total</span>
       </div>
@@ -598,7 +663,9 @@ function Stat({ Icon, label, value }: { Icon: typeof Eye; label: string; value: 
   );
 }
 
-function EmptyState({ phone }: { phone: string }) {
+function EmptyState({ phone, name }: { phone: string; name: string }) {
+  const displayName = displayUserName(name, phone);
+
   return (
     <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 text-center fade-up">
       <img
@@ -606,15 +673,15 @@ function EmptyState({ phone }: { phone: string }) {
         alt="Testbook"
         className="h-10 w-auto mx-auto"
       />
-      <h1 className="mt-6 text-3xl font-bold text-tb-navy">Welcome, +91 {phone}!</h1>
+      <h1 className="mt-6 text-3xl font-bold text-tb-navy">Welcome, {displayName}!</h1>
       <p className="mt-3 text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
-        You haven't submitted a video yet. Record your first reel — payouts start at <strong className="text-tb-navy">10,000 views (₹500)</strong>.
+        You haven't sent us a video yet. Create your first publish-ready video — payouts start at <strong className="text-tb-navy">10,000 views (₹500)</strong>.
       </p>
       <div className="mt-10 grid sm:grid-cols-3 gap-4 text-left max-w-xl mx-auto">
         {[
-          { n: "1", t: "Record a reel", d: "30–60 second vertical video on your exam prep journey" },
-          { n: "2", t: "Upload your video", d: "Upload the video file and add your caption" },
-          { n: "3", t: "Get paid via UPI", d: "Every view milestone you cross triggers a UPI transfer" },
+          { n: "1", t: "Create the video", d: "30–60 second vertical video on your exam prep journey" },
+          { n: "2", t: "Upload to Testbook", d: "Give us the final video file for review" },
+          { n: "3", t: "We publish and track", d: "Milestones on the published video trigger UPI payout" },
         ].map(({ n, t, d }) => (
           <div key={n} className="card p-5">
             <div className="size-8 rounded-full tb-gradient text-white text-sm font-bold flex items-center justify-center">{n}</div>
@@ -623,7 +690,7 @@ function EmptyState({ phone }: { phone: string }) {
           </div>
         ))}
       </div>
-      <Link to="/submit" className="btn-orange mt-8 inline-flex text-base px-8 py-3.5">Submit your first video <ArrowRight className="size-4" /></Link>
+      <Link to="/submit" className="btn-orange mt-8 inline-flex text-base px-8 py-3.5">Send your first video <ArrowRight className="size-4" /></Link>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lmsGetStudentProfileByPhone } from "@/lib/lms";
 import { testbookVerifyOtp } from "@/lib/testbook-otp";
 
 const cors = {
@@ -28,7 +29,20 @@ export const Route = createFileRoute("/api/auth/verify-otp")({
             String(body.phone ?? ""),
             String(body.otp ?? ""),
           );
-          return json(result, result.ok ? 200 : result.status || 401);
+
+          if (!result.ok) return json(result, result.status || 401);
+
+          try {
+            const profile = await lmsGetStudentProfileByPhone(String(body.phone ?? ""));
+            return json({
+              ...result,
+              userId: result.userId ?? profile.studentId ?? undefined,
+              studentId: result.studentId ?? profile.studentId ?? undefined,
+              name: profile.name ?? undefined,
+            });
+          } catch {
+            return json(result);
+          }
         } catch (err) {
           return json(
             {

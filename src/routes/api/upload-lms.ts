@@ -7,7 +7,7 @@
  *   creatorPhone  — creator's phone number
  *   creatorUserId — creator's Testbook user ID
  *   sessionId     — browser session ID
- *   platform      — instagram | youtube | facebook
+ *   platform      — instagram | youtube
  *
  * Emits only final, relevant events:
  *   UGC_creators_video_upload_completed

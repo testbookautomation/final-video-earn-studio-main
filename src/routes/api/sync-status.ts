@@ -13,6 +13,8 @@ const TOKEN = "TB_UGC_SECRET_2025";
 function mapStatus(raw: string): SubmissionStatus {
   switch (raw.toLowerCase().replace(/[\s-]/g, "_")) {
     case "approved":          return "approved";
+    case "preapproved":
+    case "pre_approved":      return "approved";
     case "rejected":          return "rejected";
     case "live":              return "live";
     case "milestone_reached": return "milestone_reached";
