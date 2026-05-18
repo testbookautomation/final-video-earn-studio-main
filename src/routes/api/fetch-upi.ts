@@ -1,12 +1,12 @@
 /**
  * GET /api/fetch-upi?phone=...&userId=...
  *
- * Queries Apps Script for the creator's stored UPI ID via the ?type=status endpoint,
- * then extracts upi from the submission's payout record.
+ * Queries LMS for the student's VPA, then falls back to Apps Script for older
+ * creator submissions that only have payout.upi stored there.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
-import { APPS_SCRIPT_URL } from "@/lib/lms";
+import { APPS_SCRIPT_URL, lmsGetStudentVpaByPhone } from "@/lib/lms";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -25,11 +25,32 @@ export const Route = createFileRoute("/api/fetch-upi")({
         const url    = new URL(request.url);
         const phone  = (url.searchParams.get("phone")  ?? "").replace(/\D/g, "");
         const userId = url.searchParams.get("userId") ?? phone;
+        const debug  = url.searchParams.get("debug") === "1";
+        let lmsError: string | null = null;
 
         if (!phone) {
           return new Response(JSON.stringify({ phone, userId, upi: null }), {
             status: 200, headers: { "Content-Type": "application/json", ...cors },
           });
+        }
+
+        try {
+          const lms = await lmsGetStudentVpaByPhone(phone);
+          if (lms.vpa) {
+            return new Response(JSON.stringify({
+              phone,
+              userId,
+              upi: lms.vpa,
+              source: "lms",
+              studentId: lms.studentId,
+              mobile: lms.mobile,
+            }), {
+              status: 200, headers: { "Content-Type": "application/json", ...cors },
+            });
+          }
+        } catch (err) {
+          lmsError = String(err);
+          // Fall through to Apps Script so a temporary LMS issue does not block the form.
         }
 
         try {
@@ -43,11 +64,23 @@ export const Route = createFileRoute("/api/fetch-upi")({
           };
 
           const upi = data?.submission?.payout?.upi ?? null;
-          return new Response(JSON.stringify({ phone, userId, upi }), {
+          return new Response(JSON.stringify({
+            phone,
+            userId,
+            upi,
+            source: upi ? "apps_script" : null,
+            ...(debug ? { lmsError } : {}),
+          }), {
             status: 200, headers: { "Content-Type": "application/json", ...cors },
           });
         } catch {
-          return new Response(JSON.stringify({ phone, userId, upi: null }), {
+          return new Response(JSON.stringify({
+            phone,
+            userId,
+            upi: null,
+            source: null,
+            ...(debug ? { lmsError } : {}),
+          }), {
             status: 200, headers: { "Content-Type": "application/json", ...cors },
           });
         }

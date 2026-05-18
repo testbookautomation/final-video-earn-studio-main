@@ -1,0 +1,624 @@
+/*
+  Testbook Creator Lab — Google Apps Script Webhook
+  Deploy: Execute as Me · Who has access: Anyone
+*/
+
+var CONFIG = {
+  SECRET_TOKEN:        "TB_UGC_SECRET_2025",
+  SHEET_ID:            "1zEu7CtKhW3jsocPE1qR85xekiu_OBi7ZyJsRJY9yyaI",
+  LMS_EMAIL:           "learning@testbook.com",
+  LMS_PASSWORD:        "learning!@#book",
+  LMS_LOGIN_URL:       "https://lms-api.testbook.com/api/v2/admin/login",
+  LMS_PRESIGNED_URL_API: "https://lms-api.testbook.com/api/v2/pre-signed-upload?language=All",
+  VIEW_TARGET:         5000
+};
+
+var SHEETS = {
+  SUBMISSIONS: "Submissions",
+  EVENTS:      "Events",
+  USERS:       "Users",
+  PAYOUT:      "Payout",
+  REVIEW:      "Review & Pay"
+};
+
+var HEADERS = {
+  SUBMISSIONS: [
+    "Submission ID","Submitted At","User ID","Phone","Name","Email",
+    "Exam Category","Platform","Video Link","Social Handle","Caption",
+    "UPI ID","Followers","Consent","Status","Rejection Reason","Approved By",
+    "Approved At","Views","Likes","Comments","Payout Eligibility",
+    "Payout Amount","Payout Status","Razorpay ID","CDN URL",
+    "Updated At","IP Address","Metadata JSON","Approve","Reject"
+  ],
+  EVENTS: [
+    "Event ID","Timestamp","User ID","Phone","Event Name","Page","Platform","Payload"
+  ],
+  USERS: [
+    "User ID","Phone","Name","Email","Exam Category","UPI ID","First Seen","Last Seen","Submission Count"
+  ],
+  PAYOUT: [
+    "Payout ID","Submission ID","User ID","Phone","UPI ID","Amount",
+    "Status","Razorpay ID","Failure Reason","Created At","Updated At"
+  ],
+  REVIEW: [
+    "Submission ID","Submitted At","Name","Phone","UPI ID","Email",
+    "Exam Category","Platform","Followers","Video Link","Caption",
+    "Status","Views","Likes","Comments","Milestone Reached","Payout Amount (₹)",
+    "Payout Status","Approve","Reject","Rejection Reason","Reviewed By","Reviewed At"
+  ]
+};
+
+/* ── Entry points ──────────────────────────────────────────── */
+
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    if (!verifyToken(body.token)) return json({ success: false, error: "Unauthorized" });
+    if (body.type === "submit") return json(handleSubmit(body));
+    if (body.type === "event")  return json(handleEvent(body));
+    return json({ success: false, error: "Unknown type: " + (body.type || "") });
+  } catch (err) {
+    return json({ success: false, error: String(err) });
+  }
+}
+
+function doGet(e) {
+  try {
+    var p = (e && e.parameter) ? e.parameter : {};
+    if (!verifyToken(p.token)) return json({ success: false, error: "Unauthorized" });
+    if (p.type === "ping")   return json({ success: true, message: "OK", timestamp: new Date().toISOString() });
+    if (p.type === "status") return json(handleStatus(p.phone, p.userId));
+    if (p.type === "debug")  return json(handleDebug());
+    return json({ success: false, error: "Unknown type" });
+  } catch (err) {
+    return json({ success: false, error: String(err) });
+  }
+}
+
+/* ── Submit ────────────────────────────────────────────────── */
+
+function handleSubmit(data) {
+  var name         = safeStr(data.name);
+  var phone        = normalizePhone(data.phone);
+  var userId       = safeStr(data.userId) || phone;
+  var email        = safeStr(data.email);
+  var upi          = safeStr(data.upi);
+  var examCategory = safeStr(data.examCategory);
+  var platform     = safeStr(data.platform);
+  var videoLink    = safeStr(data.videoLink);
+  var socialHandle = safeStr(data.socialHandle);
+  var caption      = safeStr(data.caption);
+  var followers    = safeStr(data.followers);
+  var consent      = data.consent === true || data.consent === "true";
+
+  if (!name)    return { success: false, error: "name is required" };
+  if (!phone || phone.length !== 10) return { success: false, error: "valid 10-digit phone required" };
+  if (!videoLink) return { success: false, error: "videoLink is required" };
+  if (!consent) return { success: false, error: "consent is required" };
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    var sheet = getOrCreateSheet(SHEETS.SUBMISSIONS, HEADERS.SUBMISSIONS);
+    ensureHeaders(sheet, HEADERS.SUBMISSIONS);
+
+    if (isDuplicateSubmission(sheet, videoLink)) {
+      return { success: false, error: "duplicate", message: "This video has already been submitted." };
+    }
+
+    var submissionId = generateId("TB");
+    var now = new Date().toISOString();
+    var meta = typeof data.metadata === "object" ? data.metadata : {};
+
+    sheet.appendRow([
+      submissionId, now, userId, phone, name, email,
+      examCategory, platform, videoLink, socialHandle, caption,
+      upi, followers, consent ? "Yes" : "No",
+      "Under Review", "", "", "",
+      0, 0, 0, "Not Eligible", 0, "Pending", "",
+      videoLink, now,
+      safeStr(meta.ip || ""),
+      JSON.stringify(meta),
+      false, false
+    ]);
+
+    upsertUser({ userId: userId, phone: phone, name: name, email: email, examCategory: examCategory, upi: upi });
+
+    // Add to Review & Pay sheet immediately
+    addToReviewSheet({
+      submissionId: submissionId, now: now, name: name, phone: phone,
+      upi: upi, email: email, examCategory: examCategory, platform: platform,
+      followers: followers, videoLink: videoLink, caption: caption
+    });
+
+    return { success: true, submissionId: submissionId, status: "Under Review" };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ── Review & Pay sheet ────────────────────────────────────── */
+
+function addToReviewSheet(d) {
+  var sheet = getOrCreateSheet(SHEETS.REVIEW, HEADERS.REVIEW);
+  ensureHeaders(sheet, HEADERS.REVIEW);
+  sheet.appendRow([
+    d.submissionId, d.now, d.name, d.phone, d.upi, d.email,
+    d.examCategory, d.platform, d.followers, d.videoLink, d.caption,
+    "Under Review", 0, 0, 0, "None", 0,
+    "Pending", false, false, "", "", ""
+  ]);
+  // Format last added row
+  var lastRow = sheet.getLastRow();
+  var col = headerIndex(sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0]);
+  // Hyperlink for video
+  if (d.videoLink && col["Video Link"] !== undefined) {
+    sheet.getRange(lastRow, col["Video Link"]+1).setFormula('=HYPERLINK("' + d.videoLink + '","▶ Watch")');
+  }
+}
+
+function syncReviewSheet() {
+  var ss       = getSpreadsheet();
+  var subSheet = ss.getSheetByName(SHEETS.SUBMISSIONS);
+  if (!subSheet) return;
+
+  var reviewSheet = getOrCreateSheet(SHEETS.REVIEW, HEADERS.REVIEW);
+  ensureHeaders(reviewSheet, HEADERS.REVIEW);
+
+  var subRows = subSheet.getDataRange().getValues();
+  if (subRows.length <= 1) return;
+
+  var sCol = headerIndex(subRows[0]);
+  var rCol = headerIndex(reviewSheet.getRange(1,1,1,reviewSheet.getLastColumn()).getValues()[0]);
+
+  // Build index of existing submission IDs in Review sheet
+  var reviewRows = reviewSheet.getDataRange().getValues();
+  var existing   = {};
+  for (var i = 1; i < reviewRows.length; i++) {
+    existing[String(reviewRows[i][rCol["Submission ID"]])] = i + 1; // 1-based row
+  }
+
+  for (var r = 1; r < subRows.length; r++) {
+    var row  = subRows[r];
+    var sid  = String(row[sCol["Submission ID"]]);
+    var views = Number(row[sCol["Views"]]) || 0;
+    var milestone = getMilestone(views);
+
+    if (existing[sid]) {
+      // Update status, metrics, payout in existing row
+      var rRow = existing[sid];
+      reviewSheet.getRange(rRow, rCol["Status"]+1).setValue(row[sCol["Status"]]);
+      reviewSheet.getRange(rRow, rCol["Views"]+1).setValue(views);
+      reviewSheet.getRange(rRow, rCol["Likes"]+1).setValue(Number(row[sCol["Likes"]]) || 0);
+      reviewSheet.getRange(rRow, rCol["Comments"]+1).setValue(Number(row[sCol["Comments"]]) || 0);
+      reviewSheet.getRange(rRow, rCol["Milestone Reached"]+1).setValue(milestone);
+      reviewSheet.getRange(rRow, rCol["Payout Amount (₹)"]+1).setValue(Number(row[sCol["Payout Amount"]]) || 0);
+      reviewSheet.getRange(rRow, rCol["Payout Status"]+1).setValue(row[sCol["Payout Status"]]);
+      reviewSheet.getRange(rRow, rCol["Reviewed By"]+1).setValue(row[sCol["Approved By"]]);
+      reviewSheet.getRange(rRow, rCol["Reviewed At"]+1).setValue(row[sCol["Approved At"]]);
+    } else {
+      // New row
+      var videoLink = String(row[sCol["Video Link"]] || "");
+      reviewSheet.appendRow([
+        sid,
+        row[sCol["Submitted At"]],
+        row[sCol["Name"]],
+        row[sCol["Phone"]],
+        row[sCol["UPI ID"]],
+        row[sCol["Email"]],
+        row[sCol["Exam Category"]],
+        row[sCol["Platform"]],
+        row[sCol["Followers"]],
+        videoLink,
+        row[sCol["Caption"]],
+        row[sCol["Status"]],
+        views,
+        Number(row[sCol["Likes"]]) || 0,
+        Number(row[sCol["Comments"]]) || 0,
+        milestone,
+        Number(row[sCol["Payout Amount"]]) || 0,
+        row[sCol["Payout Status"]],
+        false, false,
+        row[sCol["Rejection Reason"]],
+        row[sCol["Approved By"]],
+        row[sCol["Approved At"]]
+      ]);
+      if (videoLink) {
+        var nr = reviewSheet.getLastRow();
+        reviewSheet.getRange(nr, rCol["Video Link"]+1).setFormula('=HYPERLINK("' + videoLink + '","▶ Watch")');
+      }
+    }
+  }
+  SpreadsheetApp.flush();
+}
+
+function getMilestone(views) {
+  if (views >= 1000000) return "10L — ₹25,000";
+  if (views >= 500000)  return "5L — ₹15,000";
+  if (views >= 100000)  return "1L — ₹6,000";
+  if (views >= 50000)   return "50K — ₹2,500";
+  if (views >= 10000)   return "10K — ₹500";
+  return "None";
+}
+
+/* ── onEdit: handle Review & Pay checkboxes ────────────────── */
+
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var sheet     = e.range.getSheet();
+    var sheetName = sheet.getName();
+
+    if (sheetName === SHEETS.SUBMISSIONS) handleSubmissionsEdit(e, sheet);
+    if (sheetName === SHEETS.REVIEW)      handleReviewEdit(e, sheet);
+  } catch (err) {
+    console.error("onEdit error: " + err);
+  }
+}
+
+function handleSubmissionsEdit(e, sheet) {
+  if (e.range.getRow() === 1 || String(e.value).toUpperCase() !== "TRUE") return;
+  var headers    = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var col        = headerIndex(headers);
+  var editedCol  = e.range.getColumn();
+  var approveCol = col["Approve"] !== undefined ? col["Approve"] + 1 : 0;
+  var rejectCol  = col["Reject"]  !== undefined ? col["Reject"]  + 1 : 0;
+  if (editedCol !== approveCol && editedCol !== rejectCol) return;
+
+  var rowIndex = e.range.getRow();
+  var status   = editedCol === approveCol ? "Approved" : "Rejected";
+  var now      = new Date().toISOString();
+  var reviewer = getReviewer();
+
+  setCell(sheet, rowIndex, col, "Status",      status);
+  setCell(sheet, rowIndex, col, "Approved By", reviewer);
+  setCell(sheet, rowIndex, col, "Approved At", now);
+  setCell(sheet, rowIndex, col, "Updated At",  now);
+  if (status === "Approved" && rejectCol)  sheet.getRange(rowIndex, rejectCol).setValue(false);
+  if (status === "Rejected" && approveCol) sheet.getRange(rowIndex, approveCol).setValue(false);
+
+  // Mirror to Review & Pay
+  mirrorStatusToReview(sheet, rowIndex, col, status, now, reviewer);
+}
+
+function handleReviewEdit(e, sheet) {
+  if (e.range.getRow() === 1 || String(e.value).toUpperCase() !== "TRUE") return;
+  var headers    = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+  var col        = headerIndex(headers);
+  var editedCol  = e.range.getColumn();
+  var approveCol = col["Approve"] !== undefined ? col["Approve"] + 1 : 0;
+  var rejectCol  = col["Reject"]  !== undefined ? col["Reject"]  + 1 : 0;
+  if (editedCol !== approveCol && editedCol !== rejectCol) return;
+
+  var rowIndex = e.range.getRow();
+  var status   = editedCol === approveCol ? "Approved" : "Rejected";
+  var now      = new Date().toISOString();
+  var reviewer = getReviewer();
+
+  setCell(sheet, rowIndex, col, "Status",      status);
+  setCell(sheet, rowIndex, col, "Reviewed By", reviewer);
+  setCell(sheet, rowIndex, col, "Reviewed At", now);
+  if (status === "Approved" && rejectCol)  sheet.getRange(rowIndex, rejectCol).setValue(false);
+  if (status === "Rejected" && approveCol) sheet.getRange(rowIndex, approveCol).setValue(false);
+
+  // Mirror back to Submissions sheet
+  var sid = String(sheet.getRange(rowIndex, col["Submission ID"]+1).getValue());
+  mirrorStatusToSubmissions(sid, status, now, reviewer);
+}
+
+function mirrorStatusToReview(subSheet, rowIndex, col, status, now, reviewer) {
+  var sid = String(subSheet.getRange(rowIndex, col["Submission ID"]+1).getValue());
+  var reviewSheet = getSpreadsheet().getSheetByName(SHEETS.REVIEW);
+  if (!reviewSheet) return;
+  var rows = reviewSheet.getDataRange().getValues();
+  var rCol = headerIndex(rows[0]);
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][rCol["Submission ID"]]) === sid) {
+      reviewSheet.getRange(i+1, rCol["Status"]+1).setValue(status);
+      reviewSheet.getRange(i+1, rCol["Reviewed By"]+1).setValue(reviewer);
+      reviewSheet.getRange(i+1, rCol["Reviewed At"]+1).setValue(now);
+      break;
+    }
+  }
+}
+
+function mirrorStatusToSubmissions(sid, status, now, reviewer) {
+  var subSheet = getSpreadsheet().getSheetByName(SHEETS.SUBMISSIONS);
+  if (!subSheet) return;
+  var rows = subSheet.getDataRange().getValues();
+  var col  = headerIndex(rows[0]);
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][col["Submission ID"]]) === sid) {
+      setCell(subSheet, i+1, col, "Status",      status);
+      setCell(subSheet, i+1, col, "Approved By", reviewer);
+      setCell(subSheet, i+1, col, "Approved At", now);
+      setCell(subSheet, i+1, col, "Updated At",  now);
+      break;
+    }
+  }
+}
+
+/* ── Event ─────────────────────────────────────────────────── */
+
+function handleEvent(data) {
+  var eventName = safeStr(data.eventName);
+  if (!eventName) return { success: false, error: "eventName is required" };
+
+  var sheet = getOrCreateSheet(SHEETS.EVENTS, HEADERS.EVENTS);
+  ensureHeaders(sheet, HEADERS.EVENTS);
+
+  var eventId = generateId("EVT");
+  sheet.appendRow([
+    eventId, new Date().toISOString(),
+    safeStr(data.userId), normalizePhone(data.phone),
+    eventName, safeStr(data.page), safeStr(data.platform),
+    JSON.stringify(data.payload || {})
+  ]);
+
+  return { success: true, eventId: eventId };
+}
+
+/* ── Status ────────────────────────────────────────────────── */
+
+function handleStatus(phone, userId) {
+  var nPhone  = normalizePhone(phone);
+  var nUserId = safeStr(userId);
+  if (!nPhone && !nUserId) return { success: false, error: "phone or userId required" };
+
+  var sheet = getSpreadsheet().getSheetByName(SHEETS.SUBMISSIONS);
+  if (!sheet) return { success: true, submission: null };
+
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return { success: true, submission: null };
+  var col = headerIndex(rows[0]);
+
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var row      = rows[i];
+    var rowPhone = normalizePhone(String(row[col["Phone"]] || ""));
+    var rowUser  = safeStr(row[col["User ID"]]);
+    if ((nPhone && rowPhone === nPhone) || (nUserId && rowUser === nUserId)) {
+      return {
+        success: true,
+        submission: {
+          submissionId: row[col["Submission ID"]],
+          submittedAt:  row[col["Submitted At"]],
+          name:         row[col["Name"]],
+          phone:        row[col["Phone"]],
+          examCategory: row[col["Exam Category"]],
+          platform:     row[col["Platform"]],
+          videoLink:    row[col["Video Link"]],
+          socialHandle: row[col["Social Handle"]],
+          status:       row[col["Status"]],
+          rejectionReason: row[col["Rejection Reason"]],
+          metrics: {
+            views:    Number(row[col["Views"]])    || 0,
+            likes:    Number(row[col["Likes"]])    || 0,
+            comments: Number(row[col["Comments"]]) || 0,
+            target:   CONFIG.VIEW_TARGET
+          },
+          payout: {
+            upi:        row[col["UPI ID"]],
+            eligibility:row[col["Payout Eligibility"]],
+            amount:     Number(row[col["Payout Amount"]]) || 0,
+            status:     row[col["Payout Status"]],
+            razorpayId: row[col["Razorpay ID"]]
+          }
+        }
+      };
+    }
+  }
+  return { success: true, submission: null };
+}
+
+/* ── Helpers ───────────────────────────────────────────────── */
+
+function upsertUser(data) {
+  var sheet = getOrCreateSheet(SHEETS.USERS, HEADERS.USERS);
+  ensureHeaders(sheet, HEADERS.USERS);
+  var rows = sheet.getDataRange().getValues();
+  var col  = headerIndex(rows[0]);
+  var now  = new Date().toISOString();
+
+  for (var i = 1; i < rows.length; i++) {
+    if (normalizePhone(String(rows[i][col["Phone"]] || "")) === data.phone) {
+      sheet.getRange(i+1, col["User ID"]+1).setValue(data.userId);
+      sheet.getRange(i+1, col["Name"]+1).setValue(data.name);
+      sheet.getRange(i+1, col["Email"]+1).setValue(data.email);
+      sheet.getRange(i+1, col["Exam Category"]+1).setValue(data.examCategory);
+      if (data.upi) sheet.getRange(i+1, col["UPI ID"]+1).setValue(data.upi);
+      sheet.getRange(i+1, col["Last Seen"]+1).setValue(now);
+      sheet.getRange(i+1, col["Submission Count"]+1).setValue(Number(rows[i][col["Submission Count"]]) + 1);
+      return;
+    }
+  }
+  sheet.appendRow([data.userId, data.phone, data.name, data.email, data.examCategory, data.upi || "", now, now, 1]);
+}
+
+function isDuplicateSubmission(sheet, videoLink) {
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return false;
+  var col  = headerIndex(rows[0]);
+  var link = String(videoLink).toLowerCase();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][col["Video Link"]] || "").toLowerCase() === link) return true;
+  }
+  return false;
+}
+
+function setCell(sheet, rowIndex, col, header, value) {
+  if (col[header] === undefined) return;
+  sheet.getRange(rowIndex, col[header]+1).setValue(value);
+}
+
+function getReviewer() {
+  try { return Session.getActiveUser().getEmail() || "Sheet user"; } catch(e) { return "Sheet user"; }
+}
+
+function getSpreadsheet() {
+  return CONFIG.SHEET_ID ? SpreadsheetApp.openById(CONFIG.SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function getOrCreateSheet(name, headers) {
+  var ss    = getSpreadsheet();
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    formatHeader(sheet, headers.length);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function ensureHeaders(sheet, headers) {
+  var existing = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length)).getValues()[0];
+  var changed  = false;
+  for (var i = 0; i < headers.length; i++) {
+    if (existing[i] !== headers[i]) { existing[i] = headers[i]; changed = true; }
+  }
+  if (changed) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    formatHeader(sheet, headers.length);
+  }
+}
+
+function formatHeader(sheet, count) {
+  sheet.getRange(1, 1, 1, count)
+    .setFontWeight("bold")
+    .setBackground("#0B2F6B")
+    .setFontColor("#ffffff");
+}
+
+function headerIndex(headers) {
+  var m = {};
+  for (var i = 0; i < headers.length; i++) m[String(headers[i])] = i;
+  return m;
+}
+
+function verifyToken(token) { return safeStr(token) === CONFIG.SECRET_TOKEN; }
+
+function generateId(prefix) {
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var id = prefix + "-";
+  for (var i = 0; i < 7; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+function normalizePhone(value) {
+  var d = safeStr(value).replace(/\D/g, "");
+  if (d.length > 10 && d.indexOf("91") === 0) d = d.slice(d.length - 10);
+  return d.slice(-10);
+}
+
+function safeStr(v) {
+  return (v === null || v === undefined) ? "" : String(v).trim();
+}
+
+function json(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function handleDebug() {
+  var ss = getSpreadsheet();
+  var info = {};
+  Object.keys(SHEETS).forEach(function(key) {
+    var s = ss.getSheetByName(SHEETS[key]);
+    info[SHEETS[key]] = s ? { rows: s.getLastRow(), cols: s.getLastColumn() } : null;
+  });
+  return { success: true, sheets: info, timestamp: new Date().toISOString() };
+}
+
+/* ── Setup (run once) ──────────────────────────────────────── */
+
+function setupSheets() {
+  // Create all sheets
+  Object.keys(SHEETS).forEach(function(key) {
+    var s = getOrCreateSheet(SHEETS[key], HEADERS[key]);
+    ensureHeaders(s, HEADERS[key]);
+  });
+
+  // Dropdowns on Submissions
+  var subSheet = getOrCreateSheet(SHEETS.SUBMISSIONS, HEADERS.SUBMISSIONS);
+  var subCol   = headerIndex(subSheet.getRange(1,1,1,subSheet.getLastColumn()).getValues()[0]);
+  applyDropdown(subSheet, subCol, "Status",             ["Under Review","Approved","Rejected"]);
+  applyDropdown(subSheet, subCol, "Payout Eligibility", ["Not Eligible","Eligible"]);
+  applyDropdown(subSheet, subCol, "Payout Status",      ["Pending","Processing","Paid","Failed"]);
+  applyCheckboxes(subSheet, subCol, "Approve");
+  applyCheckboxes(subSheet, subCol, "Reject");
+
+  // Dropdowns on Review & Pay
+  var revSheet = getOrCreateSheet(SHEETS.REVIEW, HEADERS.REVIEW);
+  var revCol   = headerIndex(revSheet.getRange(1,1,1,revSheet.getLastColumn()).getValues()[0]);
+  applyDropdown(revSheet, revCol, "Status",        ["Under Review","Approved","Rejected"]);
+  applyDropdown(revSheet, revCol, "Payout Status", ["Pending","Processing","Paid","Failed"]);
+  applyCheckboxes(revSheet, revCol, "Approve");
+  applyCheckboxes(revSheet, revCol, "Reject");
+
+  // Style Review & Pay columns widths
+  revSheet.setColumnWidth(revCol["Name"]+1,          160);
+  revSheet.setColumnWidth(revCol["Phone"]+1,         120);
+  revSheet.setColumnWidth(revCol["UPI ID"]+1,        180);
+  revSheet.setColumnWidth(revCol["Video Link"]+1,    100);
+  revSheet.setColumnWidth(revCol["Caption"]+1,       250);
+  revSheet.setColumnWidth(revCol["Status"]+1,        120);
+  revSheet.setColumnWidth(revCol["Payout Status"]+1, 120);
+
+  // Install onEdit trigger once
+  var triggers = ScriptApp.getProjectTriggers();
+  var hasEdit  = triggers.some(function(t) { return t.getHandlerFunction() === "onEdit"; });
+  if (!hasEdit) {
+    ScriptApp.newTrigger("onEdit").forSpreadsheet(getSpreadsheet()).onEdit().create();
+  }
+
+  // Install hourly sync trigger for Review & Pay
+  var hasSync = triggers.some(function(t) { return t.getHandlerFunction() === "syncReviewSheet"; });
+  if (!hasSync) {
+    ScriptApp.newTrigger("syncReviewSheet").timeBased().everyHours(1).create();
+  }
+
+  SpreadsheetApp.flush();
+  getSpreadsheet().toast("All sheets ready!", "Setup complete", 5);
+}
+
+function applyDropdown(sheet, col, header, list) {
+  if (col[header] === undefined) return;
+  var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
+  sheet.getRange(2, col[header]+1, Math.max(sheet.getMaxRows()-1, 1), 1).setDataValidation(rule);
+}
+
+function applyCheckboxes(sheet, col, header) {
+  if (col[header] === undefined) return;
+  sheet.getRange(2, col[header]+1, Math.max(sheet.getMaxRows()-1, 1), 1).insertCheckboxes();
+}
+
+/* ── Tests ─────────────────────────────────────────────────── */
+
+function testSubmit() {
+  Logger.log(JSON.stringify(handleSubmit({
+    token: CONFIG.SECRET_TOKEN, type: "submit",
+    name: "Test User", phone: "9999999999", userId: "test-001",
+    email: "test@example.com", upi: "test@okhdfc",
+    examCategory: "SSC CGL", platform: "instagram",
+    videoLink: "https://youtube.com/shorts/test-" + Date.now(),
+    socialHandle: "@testuser", caption: "Test caption #TestbookPass",
+    followers: "5000", consent: true
+  })));
+}
+
+function testEvent() {
+  Logger.log(JSON.stringify(handleEvent({
+    token: CONFIG.SECRET_TOKEN, type: "event",
+    eventName: "page_view", userId: "9999999999", phone: "9999999999",
+    page: "/", platform: "", payload: { source: "test" }
+  })));
+}
+
+function testStatus() {
+  Logger.log(JSON.stringify(handleStatus("9999999999", "")));
+}
+
+function testSync() {
+  syncReviewSheet();
+  Logger.log("Sync done.");
+}

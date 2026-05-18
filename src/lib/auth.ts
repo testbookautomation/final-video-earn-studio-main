@@ -2,6 +2,7 @@
 
 export type TBUser = {
   phone: string;
+  userId?: string;
   name?: string;
   loggedInAt: number;
 };

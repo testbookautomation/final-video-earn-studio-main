@@ -88,6 +88,7 @@ function SubmitPage() {
   const termsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    track("page_view", { page: "/submit" });
     const u = getUser();
     if (!u) return;
     setPhone(u.phone);
@@ -118,6 +119,7 @@ function SubmitPage() {
     setCdnUrl(null); // reset CDN URL if a new file is picked
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setVideoPreview(URL.createObjectURL(file));
+    track("video_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
   };
 
   const removeFile = () => {
@@ -159,6 +161,7 @@ function SubmitPage() {
     if (!valid || isBusy) return;
 
     setErrorMsg("");
+    track("form_submitted", { page: "/submit", platform: form.platform });
     const submissionId = "tb_" + Math.random().toString(36).slice(2, 10);
 
     /* ── Stage 1: Upload video to LMS CDN ─────────────────── */

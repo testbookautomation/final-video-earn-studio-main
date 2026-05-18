@@ -4,12 +4,16 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { SiteLayout } from "@/components/layout/SiteLayout";
+import { setUser, getUser, isBrowser } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 
 function NotFoundComponent() {
   return (
@@ -92,6 +96,33 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isBrowser()) return;
+    const params = new URLSearchParams(window.location.search);
+    const rawPhone  = params.get("phone")  ?? params.get("Phone")  ?? "";
+    const rawUserId = params.get("userid") ?? params.get("userId") ?? params.get("user_id") ?? "";
+
+    if (!rawPhone && !rawUserId) return;
+
+    // Normalize phone — strip country code (91) if present, keep last 10 digits
+    const phone = rawPhone.replace(/\D/g, "").slice(-10);
+
+    if (phone.length === 10 || rawUserId) {
+      if (!getUser()) {
+        setUser({ phone, userId: rawUserId || phone, loggedInAt: Date.now() });
+        track("login_success", { page: window.location.pathname, payload: { source: "url_params", userId: rawUserId, phone } });
+      }
+
+      // Strip params from URL without reloading
+      const clean = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, "", clean);
+
+      navigate({ to: "/dashboard" });
+    }
+  }, [navigate]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <SiteLayout>

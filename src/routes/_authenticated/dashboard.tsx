@@ -5,6 +5,7 @@ import {
   Wallet, Send, FileText, RefreshCw, Sparkles, AlertCircle, PartyPopper,
 } from "lucide-react";
 import { getSubmission, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -42,6 +43,7 @@ function DashboardPage() {
   const [phone, setPhone] = useState("");
 
   useEffect(() => {
+    track("page_view", { page: "/dashboard" });
     const u = getUser();
     if (u) setPhone(u.phone);
     setSubmission(getSubmission());
