@@ -3,7 +3,7 @@
  *
  * Receives the full creator submission payload (including cdnUrl from /api/upload-lms).
  * Forwards to Apps Script in the exact { type: "submit", token, ... } format it expects,
- * then fires an internal event for observability.
+ * then emits one final sync outcome event.
  */
 
 import { createFileRoute } from "@tanstack/react-router";
@@ -77,8 +77,8 @@ export const Route = createFileRoute("/api/submit")({
           /* ── Internal event ───────────────────────────────────── */
           await fireEvent(
             upstream.ok
-              ? EVENT.CREATOR_SUBMISSION_APPS_SCRIPT_ACCEPTED
-              : EVENT.CREATOR_SUBMISSION_APPS_SCRIPT_FAILED,
+              ? EVENT.SUBMISSION_SYNC_COMPLETED
+              : EVENT.SUBMISSION_SYNC_FAILED,
             {
               submissionId,
               upstreamStatus: upstream.status,

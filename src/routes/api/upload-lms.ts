@@ -7,11 +7,9 @@
  *   creatorPhone  — creator's phone number
  *   platform      — instagram | youtube | facebook
  *
- * Pipeline:
- *   1. video.upload.started
- *   2. LMS login → video.upload.lms_auth_success | lms_auth_failed
- *   3. Presigned URL → video.upload.presigned_url_ready | presigned_url_failed
- *   4. CDN upload → video.upload.cdn_transfer_started → cdn_transfer_success | cdn_transfer_failed
+ * Emits only final, relevant events:
+ *   creator.video.upload.completed
+ *   creator.video.upload.failed
  *
  * Returns: { ok, cdnUrl, filename }
  */
@@ -84,57 +82,34 @@ export const Route = createFileRoute("/api/upload-lms")({
           const fileSizeBytes    = file.size;
           const meta             = { creatorPhone, submissionId };
 
-          /* ── 1. video.upload.started ───────────────────────────────── */
-          await fireEvent(EVENT.VIDEO_UPLOAD_STARTED, {
-            filename:       originalFilename,
-            cleanFilename,
-            mimeType,
-            fileSizeBytes,
-            platform,
-          }, meta);
-
-          /* ── 2. LMS authentication ─────────────────────────────────── */
           let token: string;
           try {
             token = await lmsLogin();
           } catch (err) {
-            await fireEvent(EVENT.VIDEO_UPLOAD_LMS_AUTH_FAILED, {
+            await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
+              reason: "lms_auth_failed",
               error: String(err),
+              filename: originalFilename,
+              fileSizeBytes,
+              platform,
             }, meta);
             return json({ ok: false, error: `LMS authentication failed: ${String(err)}` }, 502);
           }
 
-          await fireEvent(EVENT.VIDEO_UPLOAD_LMS_AUTH_SUCCESS, {
-            message: "LMS JWT token obtained successfully.",
-          }, meta);
-
-          /* ── 3. Get presigned upload URL ───────────────────────────── */
           let uploadUrl: string;
           let cdnUrl: string;
           try {
             ({ uploadUrl, cdnUrl } = await lmsGetPresignedUrl(token, prefix, fileExt));
           } catch (err) {
-            await fireEvent(EVENT.VIDEO_UPLOAD_PRESIGNED_URL_FAILED, {
+            await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
+              reason: "presigned_url_failed",
               error: String(err),
+              filename: originalFilename,
+              fileSizeBytes,
+              platform,
             }, meta);
             return json({ ok: false, error: `Failed to get presigned URL: ${String(err)}` }, 502);
           }
-
-          await fireEvent(EVENT.VIDEO_UPLOAD_PRESIGNED_URL_READY, {
-            cdnUrl,
-            prefix,
-            fileExt,
-            message: "Presigned upload URL obtained. Ready to transfer file to CDN.",
-          }, meta);
-
-          /* ── 4. Upload file to CDN ─────────────────────────────────── */
-          await fireEvent(EVENT.VIDEO_UPLOAD_CDN_TRANSFER_STARTED, {
-            cdnUrl,
-            fileSizeBytes,
-            mimeType,
-            // strip signed query params — they contain secrets
-            uploadEndpoint: uploadUrl.split("?")[0],
-          }, meta);
 
           let statusCode: number;
           let responseText: string;
@@ -144,9 +119,13 @@ export const Route = createFileRoute("/api/upload-lms")({
               uploadUrl, file, cleanFilename, mimeType,
             ));
           } catch (err) {
-            await fireEvent(EVENT.VIDEO_UPLOAD_CDN_TRANSFER_FAILED, {
+            await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
+              reason: "cdn_transfer_failed",
               error: String(err),
               cdnUrl,
+              filename: cleanFilename,
+              fileSizeBytes,
+              platform,
             }, meta);
             return json({ ok: false, error: `CDN transfer error: ${String(err)}` }, 502);
           }
@@ -154,21 +133,24 @@ export const Route = createFileRoute("/api/upload-lms")({
           const uploadSuccess = [200, 201, 204].includes(statusCode);
 
           if (uploadSuccess) {
-            await fireEvent(EVENT.VIDEO_UPLOAD_CDN_TRANSFER_SUCCESS, {
+            await fireEvent(EVENT.VIDEO_UPLOAD_COMPLETED, {
               cdnUrl,
               filename:       cleanFilename,
               fileSizeBytes,
               httpStatus:     statusCode,
-              message:        "Video file successfully uploaded to LMS CDN.",
+              platform,
             }, meta);
 
             return json({ ok: true, cdnUrl, filename: cleanFilename });
           } else {
-            await fireEvent(EVENT.VIDEO_UPLOAD_CDN_TRANSFER_FAILED, {
+            await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
+              reason: "cdn_rejected_upload",
               httpStatus:   statusCode,
               responseText: responseText.slice(0, 500),
               cdnUrl,
-              message:      "CDN returned a non-success status code.",
+              filename: cleanFilename,
+              fileSizeBytes,
+              platform,
             }, meta);
 
             return json({
@@ -181,7 +163,8 @@ export const Route = createFileRoute("/api/upload-lms")({
 
         } catch (err) {
           /* Catch-all for unexpected errors */
-          await fireEvent(EVENT.VIDEO_UPLOAD_PIPELINE_ERROR, {
+          await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
+            reason: "unexpected_error",
             error:    String(err),
             filename: originalFilename,
           }, { creatorPhone, submissionId });

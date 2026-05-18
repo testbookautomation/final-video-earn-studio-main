@@ -24,6 +24,13 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...cors },
   });
 
+const allowedEvents = new Set([
+  "creator.auth.otp_requested",
+  "creator.auth.login_completed",
+  "creator.video.file_selected",
+  "creator.submission.submit_clicked",
+]);
+
 export const Route = createFileRoute("/api/track")({
   server: {
     handlers: {
@@ -32,6 +39,11 @@ export const Route = createFileRoute("/api/track")({
       POST: async ({ request }) => {
         try {
           const body = await request.json() as Record<string, unknown>;
+          const eventName = String(body.eventName ?? "");
+
+          if (!allowedEvents.has(eventName)) {
+            return json({ ok: true, skipped: true });
+          }
 
           // Forward to Apps Script in the format it expects
           fetch(APPS_SCRIPT_URL, {
@@ -40,7 +52,7 @@ export const Route = createFileRoute("/api/track")({
             body:     JSON.stringify({
               type:      "event",
               token:     APPS_SCRIPT_TOKEN,
-              eventName: String(body.eventName ?? "unknown"),
+              eventName,
               userId:    String(body.userId    ?? ""),
               phone:     String(body.phone     ?? ""),
               page:      String(body.page      ?? ""),
