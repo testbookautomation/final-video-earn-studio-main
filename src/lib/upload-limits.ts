@@ -4,8 +4,6 @@ export const ACCEPTED_VIDEO_EXTENSIONS = "MP4, MOV, AVI";
 
 export function isAcceptedVideoFile(file: File): boolean {
   const extension = file.name.split(".").pop()?.toLowerCase();
-  return (
-    file.type.startsWith("video/") &&
-    ["mp4", "mov", "avi"].includes(extension ?? "")
-  );
+  const isAcceptedExtension = ["mp4", "mov", "avi"].includes(extension ?? "");
+  return isAcceptedExtension && (!file.type || file.type.startsWith("video/"));
 }

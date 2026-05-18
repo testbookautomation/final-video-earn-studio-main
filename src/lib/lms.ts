@@ -1,5 +1,5 @@
 /**
- * Server-side LMS CDN upload helpers + webhook event dispatcher.
+ * Server-side LMS CDN upload helpers + Apps Script event dispatcher.
  * All functions in this file are intended for server routes ONLY — never import in browser code.
  */
 
@@ -8,9 +8,13 @@ const LMS_PASSWORD  = "learning!@#book";
 const LOGIN_URL     = "https://lms-api.testbook.com/api/v2/admin/login";
 const PRESIGNED_API = "https://lms-api.testbook.com/api/v2/pre-signed-upload?language=All";
 
-// Apps Script webhook — receives all platform events
-export const WEBHOOK_URL =
+export const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbzBm0a1BSio88QWXaYz-5Xc0XTc8gDdxH4HFaEow1N4HNsWpRriD6jCGhz1ORHxDXsu/exec";
+
+const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
+
+// Keep old export alias so existing imports don't break
+export const WEBHOOK_URL = APPS_SCRIPT_URL;
 
 /* ── Event types ─────────────────────────────────────────── */
 
@@ -53,14 +57,17 @@ export async function fireEvent(
   meta: EventMeta = {},
 ): Promise<void> {
   const payload = {
-    event,
-    timestamp: Date.now(),
-    ...(meta.creatorPhone  && { creatorPhone:  meta.creatorPhone }),
-    ...(meta.submissionId  && { submissionId:  meta.submissionId }),
-    data,
+    type: "event",
+    token: APPS_SCRIPT_TOKEN,
+    eventName: event,
+    userId: meta.creatorPhone ?? "",
+    phone: meta.creatorPhone ?? "",
+    page: String(data.page ?? ""),
+    platform: String(data.platform ?? ""),
+    payload: { ...data, submissionId: meta.submissionId },
   };
   try {
-    await fetch(WEBHOOK_URL, {
+    await fetch(APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

@@ -104,6 +104,9 @@
     border-radius: var(--radius);
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06), 0 8px 28px -10px rgba(15, 23, 42, 0.12);
   }
+  .card.tb-gradient {
+    background: linear-gradient(135deg, var(--tb-navy) 0%, #142152 45%, var(--tb-blue) 100%);
+  }
   .glass {
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(14px);

@@ -7,6 +7,7 @@ import {
   CloudUpload, Send, RefreshCw,
 } from "lucide-react";
 import { getUser, saveSubmission, type TBSubmission } from "@/lib/auth";
+import { track } from "@/lib/analytics";
 import {
   ACCEPTED_VIDEO_EXTENSIONS,
   MAX_VIDEO_UPLOAD_BYTES,
@@ -49,8 +50,8 @@ type SubmitStage =
 
 const STAGE_LABELS: Record<SubmitStage, string> = {
   idle:                 "",
-  uploading_to_cdn:     "Uploading video to LMS CDN…",
-  creating_submission:  "Saving submission & notifying team…",
+  uploading_to_cdn:     "Uploading your video…",
+  creating_submission:  "Submitting your entry…",
   done:                 "Submitted successfully!",
   error:                "Something went wrong",
 };
@@ -70,7 +71,7 @@ function SubmitPage() {
     examCategory: exams[0],
     platform: "instagram" as TBSubmission["platform"],
     followers: "",
-    videoMode: "upload" as "upload",
+    videoMode: "upload" as const,
     videoUrl: "",
     caption: "",
     consent: false,
@@ -133,19 +134,23 @@ function SubmitPage() {
     if (file) pickFile(file);
   };
 
-  const isUpi = (s: string) => /^[\w.\-]{2,}@[a-zA-Z]{2,}$/.test(s);
-
-  const valid =
-    form.fullName.trim().length >= 2 &&
-    /\S+@\S+\.\S+/.test(form.email) &&
-    isUpi(form.upi) &&
-    form.followers.trim() !== "" &&
-    !!videoFile &&
-    form.caption.trim().length >= 20 &&
-    form.consent &&
-    termsRead;
-
+  const isUpi = (s: string) => /^[a-zA-Z0-9._-]{2,}@[a-zA-Z0-9._-]{2,}$/.test(s.trim());
   const currentPlatform = platforms.find((p) => p.id === form.platform)!;
+
+  const validationItems = [
+    { ok: form.fullName.trim().length >= 2, message: "Enter your full name." },
+    { ok: /\S+@\S+\.\S+/.test(form.email), message: "Enter a valid email address." },
+    { ok: isUpi(form.upi), message: "Enter a valid UPI ID." },
+    { ok: form.followers.trim() !== "", message: `Enter your ${currentPlatform.followerLabel.toLowerCase()}.` },
+    { ok: !!videoFile, message: "Choose a video file." },
+    { ok: form.caption.trim().length >= 1, message: "Enter a caption for your post." },
+    { ok: form.consent, message: "Confirm the content consent checkbox." },
+    { ok: termsRead, message: "Agree to the Terms & Conditions checkbox." },
+  ];
+
+  const missingItems = validationItems.filter((item) => !item.ok);
+  const valid = missingItems.length === 0;
+
   const isBusy = stage === "uploading_to_cdn" || stage === "creating_submission";
 
   /* ── Two-stage submit pipeline ──────────────────────────── */
@@ -225,19 +230,9 @@ function SubmitPage() {
           </div>
           <h2 className="mt-5 text-2xl font-bold text-tb-navy">Video Submitted!</h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            Your video is on the LMS CDN and our team will review it within 24 hours.
+            Your video has been submitted and our team will review it within 24 hours.
             Redirecting to your dashboard…
           </p>
-          {cdnUrl && (
-            <a
-              href={cdnUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-xs text-tb-blue font-medium hover:underline"
-            >
-              <CloudUpload className="size-3.5" /> View uploaded video on CDN
-            </a>
-          )}
           <div className="mt-6 grid grid-cols-3 gap-3 text-center">
             {["Review in 24h", "Track live status", "UPI payout on milestone"].map((s) => (
               <div key={s} className="card p-3">
@@ -260,7 +255,7 @@ function SubmitPage() {
         <span className="badge text-xs"><Star className="size-3.5" /> New submission</span>
         <h1 className="mt-3 text-3xl md:text-4xl font-bold text-tb-navy">Submit your video</h1>
         <p className="mt-2 text-base text-muted-foreground">
-          Your video is uploaded directly to the LMS CDN — approval in your dashboard within 24 hours.
+          Upload your video and our team will review it within 24 hours.
         </p>
       </div>
 
@@ -418,7 +413,6 @@ function SubmitPage() {
             <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 border border-blue-100">
               <CloudUpload className="size-5 mt-0.5 shrink-0 text-tb-blue" />
               <p className="text-sm text-blue-800 leading-relaxed">
-                Your video will be uploaded directly to the <strong>LMS CDN</strong>.
                 Accepted: <strong>{ACCEPTED_VIDEO_EXTENSIONS}</strong> · Max{" "}
                 <strong>{MAX_VIDEO_UPLOAD_LABEL}</strong>
               </p>
@@ -453,7 +447,7 @@ function SubmitPage() {
                   {cdnUrl ? (
                     <div className="mt-3 flex items-center gap-2 text-sm text-emerald-700 font-medium">
                       <CheckCircle2 className="size-4 shrink-0" />
-                      Uploaded to CDN — ready to submit
+                      Video uploaded — ready to submit
                     </div>
                   ) : (
                     <div className="mt-3 flex items-center gap-2 text-sm text-blue-700 font-medium">
@@ -497,16 +491,13 @@ function SubmitPage() {
             )}
 
             {/* Caption */}
-            <Field label="Caption used on the post" hint="Min 20 characters · include #TestbookPass">
+            <Field label="Caption used on the post" hint="Include #TestbookPass in your caption">
               <textarea
                 rows={4} className="input-field resize-none" required
                 placeholder={`New to Testbook Pass and honestly — wish I'd switched sooner.\n\n#TestbookPass #StudyWithMe`}
                 value={form.caption}
                 onChange={(e) => setForm({ ...form, caption: e.target.value })}
               />
-              <div className={`mt-1.5 text-xs text-right font-medium ${form.caption.length < 20 ? "text-muted-foreground" : "text-emerald-600"}`}>
-                {form.caption.length} chars {form.caption.length < 20 ? `(${20 - form.caption.length} more needed)` : "✓"}
-              </div>
             </Field>
           </div>
         </FormSection>
@@ -572,8 +563,8 @@ function SubmitPage() {
             {/* Pipeline steps */}
             <div className="space-y-2">
               {([
-                { key: "uploading_to_cdn",    Icon: CloudUpload, label: "Uploading video to LMS CDN" },
-                { key: "creating_submission", Icon: Send,        label: "Saving submission & notifying team" },
+                { key: "uploading_to_cdn",    Icon: CloudUpload, label: "Uploading your video" },
+                { key: "creating_submission", Icon: Send,        label: "Submitting your entry" },
               ] as const).map(({ key, Icon, label }) => {
                 const isActive = stage === key;
                 const isDone   = (stage === "creating_submission" && key === "uploading_to_cdn");
@@ -636,9 +627,10 @@ function SubmitPage() {
         </div>
 
         {!valid && stage === "idle" && (
-          <p className="text-xs text-muted-foreground text-center pb-2">
-            Fill all fields, choose a video, and agree to both checkboxes to enable submission.
-          </p>
+          <div className="text-xs text-muted-foreground text-center pb-2 space-y-1">
+            <p>Complete the highlighted requirement to enable submission.</p>
+            <p className="font-semibold text-tb-navy">{missingItems[0]?.message}</p>
+          </div>
         )}
       </form>
 
