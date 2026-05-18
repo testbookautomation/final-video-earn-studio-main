@@ -428,10 +428,57 @@ function handleStatus(phone, userId) {
   var nUserId = safeStr(userId);
   if (!nPhone && !nUserId) return { success: false, error: "phone or userId required" };
 
-  var sheet = getSpreadsheet().getSheetByName(SHEETS.SUBMISSIONS);
-  if (!sheet) return { success: true, submission: null };
+  var ss = getSpreadsheet();
 
-  var rows = sheet.getDataRange().getValues();
+  // ── 1. Read from Review & Pay sheet (admin acts here directly) ──
+  var reviewSheet = ss.getSheetByName(SHEETS.REVIEW);
+  var reviewResult = null;
+  if (reviewSheet) {
+    var rRows = reviewSheet.getDataRange().getValues();
+    if (rRows.length > 1) {
+      var rCol = headerIndex(rRows[0]);
+      for (var ri = rRows.length - 1; ri >= 1; ri--) {
+        var rRow   = rRows[ri];
+        var rPhone = normalizePhone(String(rRow[rCol["Phone"]] || ""));
+        if (!nPhone || rPhone !== nPhone) continue;
+
+        var rStatus      = safeStr(rRow[rCol["Status"]]);
+        var rReason      = safeStr(rRow[rCol["Rejection Reason"]]);
+        var rPayElig     = rRow[rCol["Payment Eligible"]] === true;
+        var rPayAmt      = Number(rRow[rCol["Payout Amount (₹)"]]) || 0;
+        var rPayStatus   = safeStr(rRow[rCol["Payout Status"]]);
+        var rViews       = Number(rRow[rCol["Views"]])    || 0;
+        var rLikes       = Number(rRow[rCol["Likes"]])    || 0;
+        var rComments    = Number(rRow[rCol["Comments"]]) || 0;
+        var rUpi         = safeStr(rRow[rCol["UPI ID"]]);
+        var rSid         = safeStr(rRow[rCol["Submission ID"]]);
+
+        // Derive eligibility: explicit checkbox OR status is Approved/Paid/Milestone Reached
+        var eligibility = rPayElig || rStatus === "Approved" || rStatus === "Paid" || rStatus === "Milestone Reached"
+          ? "Eligible" : "Not Eligible";
+
+        reviewResult = {
+          submissionId:    rSid,
+          status:          rStatus,
+          rejectionReason: rReason,
+          metrics: { views: rViews, likes: rLikes, comments: rComments, target: CONFIG.VIEW_TARGET },
+          payout:  { upi: rUpi, eligibility: eligibility, amount: rPayAmt, status: rPayStatus }
+        };
+
+        // Also mirror the updated status back to Submissions sheet so it stays in sync
+        if (rStatus) mirrorStatusToSubmissions(rSid, rStatus, new Date().toISOString(), "auto-sync", rReason, eligibility);
+        break;
+      }
+    }
+  }
+
+  if (reviewResult) return { success: true, submission: reviewResult };
+
+  // ── 2. Fall back to Submissions sheet ──
+  var subSheet = ss.getSheetByName(SHEETS.SUBMISSIONS);
+  if (!subSheet) return { success: true, submission: null };
+
+  var rows = subSheet.getDataRange().getValues();
   if (rows.length <= 1) return { success: true, submission: null };
   var col = headerIndex(rows[0]);
 
@@ -444,13 +491,6 @@ function handleStatus(phone, userId) {
         success: true,
         submission: {
           submissionId:    row[col["Submission ID"]],
-          submittedAt:     row[col["Submitted At"]],
-          name:            row[col["Name"]],
-          phone:           row[col["Phone"]],
-          examCategory:    row[col["Exam Category"]],
-          platform:        row[col["Platform"]],
-          videoLink:       row[col["Video Link"]],
-          socialHandle:    row[col["Social Handle"]],
           status:          row[col["Status"]],
           rejectionReason: row[col["Rejection Reason"]],
           metrics: {

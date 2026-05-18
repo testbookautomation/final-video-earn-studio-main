@@ -56,6 +56,7 @@ function LoginPage() {
     const urlUser = getUrlUserParams(window.location.search);
     if (!urlUser.hasIdentity) {
       const session = getOrCreateUserSession();
+      if (session?.userId) setUrlUserId(session.userId);
       if (session?.phone) {
         setPhone(session.phone);
         setUrlPhone(session.phone);
@@ -66,11 +67,11 @@ function LoginPage() {
 
     const userId = urlUser.userId || urlUser.phone;
     updateUserSession({ phone: urlUser.phone, userId });
+    setUrlUserId(userId);
 
     if (urlUser.phone.length === 10) {
       setPhone(urlUser.phone);
       setUrlPhone(urlUser.phone);
-      setUrlUserId(userId);
     }
 
     const clean = window.location.pathname + window.location.hash;
