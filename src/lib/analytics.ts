@@ -9,8 +9,17 @@ type TrackOptions = {
   payload?:  Record<string, unknown>;
 };
 
+const allowedEvents = new Set([
+  "creator.auth.otp_requested",
+  "creator.auth.login_completed",
+  "creator.video.file_selected",
+  "creator.submission.submit_clicked",
+]);
+
 export function track(eventName: string, opts: TrackOptions = {}): void {
   if (!isBrowser()) return;
+  if (!allowedEvents.has(eventName)) return;
+
   const user = getUser();
   const body = {
     eventName,

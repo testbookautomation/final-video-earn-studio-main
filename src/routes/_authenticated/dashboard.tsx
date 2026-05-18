@@ -5,7 +5,6 @@ import {
   Wallet, Send, FileText, RefreshCw, Sparkles, AlertCircle, PartyPopper,
 } from "lucide-react";
 import { getSubmission, getUser, saveSubmission, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
-import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -43,7 +42,6 @@ function DashboardPage() {
   const [phone, setPhone] = useState("");
 
   useEffect(() => {
-    track("page_view", { page: "/dashboard" });
     const u = getUser();
     if (u) setPhone(u.phone);
     setSubmission(getSubmission());
@@ -115,7 +113,7 @@ function DashboardPage() {
       {!isRejected && (
         <div className="card p-6">
           <div className="text-base font-bold text-tb-navy mb-4">Submission timeline</div>
-          <ol className="grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <ol className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {timeline.map((t, i) => {
               const reached = i <= stage;
               const current = i === stage;

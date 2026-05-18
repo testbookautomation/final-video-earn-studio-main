@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { track } from "@/lib/analytics";
+import { useState } from "react";
 import {
   ArrowRight, Play, IndianRupee, Users, Trophy, Sparkles, CheckCircle2,
   LogIn, Video, Upload, ShieldCheck, Wallet, Star, ChevronDown, X, Hash,
@@ -67,8 +66,6 @@ const faqs = [
 function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [video, setVideo] = useState<typeof testimonials[number] | null>(null);
-
-  useEffect(() => { track("page_view", { page: "/" }); }, []);
 
   return (
     <>

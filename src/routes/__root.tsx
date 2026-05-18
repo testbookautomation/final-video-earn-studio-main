@@ -112,7 +112,7 @@ function RootComponent() {
     if (phone.length === 10 || rawUserId) {
       if (!getUser()) {
         setUser({ phone, userId: rawUserId || phone, loggedInAt: Date.now() });
-        track("login_success", { page: window.location.pathname, payload: { source: "url_params", userId: rawUserId, phone } });
+        track("creator.auth.login_completed", { page: window.location.pathname, payload: { source: "url_params", userId: rawUserId, phone } });
       }
 
       // Strip params from URL without reloading

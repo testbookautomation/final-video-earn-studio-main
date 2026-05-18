@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbybpI1XrkKtzdKRwMhNZ1LEnMIComBUhVfkN8DK9a3NuM_qV9BZ-Epl8JXqnHM3vQSAlQ/exec";
+  "https://script.google.com/macros/s/AKfycbweDgot9EjYJ3SkurdgwOVEBx-LrTWhsq_Rc5cp6Nsc1YrrfKSGzOWuuiNAFxoANn4xFw/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -26,29 +26,15 @@ export type EventMeta = {
 };
 
 /**
- * All event names used across the platform.
+ * Relevant webhook event names.
  *
- * Naming convention: <domain>.<entity>.<action>
- *   video.upload.*         — lifecycle of a single video file going to LMS CDN
- *   creator.submission.*   — lifecycle of a creator's form submission
+ * Naming convention: creator.<area>.<action>.<result>
  */
 export const EVENT = {
-  // ── Video upload pipeline ──────────────────────────────────
-  VIDEO_UPLOAD_STARTED:             "video.upload.started",
-  VIDEO_UPLOAD_LMS_AUTH_SUCCESS:    "video.upload.lms_auth_success",
-  VIDEO_UPLOAD_LMS_AUTH_FAILED:     "video.upload.lms_auth_failed",
-  VIDEO_UPLOAD_PRESIGNED_URL_READY: "video.upload.presigned_url_ready",
-  VIDEO_UPLOAD_PRESIGNED_URL_FAILED:"video.upload.presigned_url_failed",
-  VIDEO_UPLOAD_CDN_TRANSFER_STARTED:"video.upload.cdn_transfer_started",
-  VIDEO_UPLOAD_CDN_TRANSFER_SUCCESS:"video.upload.cdn_transfer_success",
-  VIDEO_UPLOAD_CDN_TRANSFER_FAILED: "video.upload.cdn_transfer_failed",
-  VIDEO_UPLOAD_PIPELINE_ERROR:      "video.upload.pipeline_error",
-
-  // ── Creator submission lifecycle ──────────────────────────
-  CREATOR_SUBMISSION_CREATED:                   "creator.submission.created",
-  CREATOR_SUBMISSION_FORWARDED_TO_APPS_SCRIPT:  "creator.submission.forwarded_to_apps_script",
-  CREATOR_SUBMISSION_APPS_SCRIPT_ACCEPTED:      "creator.submission.apps_script_accepted",
-  CREATOR_SUBMISSION_APPS_SCRIPT_FAILED:        "creator.submission.apps_script_failed",
+  VIDEO_UPLOAD_COMPLETED:   "creator.video.upload.completed",
+  VIDEO_UPLOAD_FAILED:      "creator.video.upload.failed",
+  SUBMISSION_SYNC_COMPLETED:"creator.submission.sync.completed",
+  SUBMISSION_SYNC_FAILED:   "creator.submission.sync.failed",
 } as const;
 
 /* ── Webhook fire (fire-and-forget) ──────────────────────── */

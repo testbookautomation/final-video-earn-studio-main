@@ -11,7 +11,10 @@ const items = [
 export function MobileBottomNav() {
   const { location } = useRouterState();
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-border">
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-border"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       <div className="grid grid-cols-4">
         {items.map(({ to, label, Icon }) => {
           const active = location.pathname === to;

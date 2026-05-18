@@ -88,7 +88,6 @@ function SubmitPage() {
   const termsScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    track("page_view", { page: "/submit" });
     const u = getUser();
     if (!u) return;
     setPhone(u.phone);
@@ -119,7 +118,7 @@ function SubmitPage() {
     setCdnUrl(null); // reset CDN URL if a new file is picked
     if (videoPreview) URL.revokeObjectURL(videoPreview);
     setVideoPreview(URL.createObjectURL(file));
-    track("video_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
+    track("creator.video.file_selected", { page: "/submit", payload: { fileName: file.name, fileSizeMb: +(file.size / 1e6).toFixed(2) } });
   };
 
   const removeFile = () => {
@@ -161,7 +160,7 @@ function SubmitPage() {
     if (!valid || isBusy) return;
 
     setErrorMsg("");
-    track("form_submitted", { page: "/submit", platform: form.platform });
+    track("creator.submission.submit_clicked", { page: "/submit", platform: form.platform });
     const submissionId = "tb_" + Math.random().toString(36).slice(2, 10);
 
     /* ── Stage 1: Upload video to LMS CDN ─────────────────── */
@@ -354,7 +353,7 @@ function SubmitPage() {
                     <button
                       type="button" key={id}
                       onClick={() => setForm({ ...form, platform: id, followers: "" })}
-                      className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border text-sm font-semibold transition-all ${
+                      className={`flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border text-xs sm:text-sm font-semibold transition-all ${
                         active
                           ? "border-tb-blue bg-blue-50 text-tb-blue shadow-sm"
                           : "border-border hover:border-tb-blue/40 text-muted-foreground hover:bg-secondary/60"
@@ -468,7 +467,7 @@ function SubmitPage() {
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
-                className={`relative rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all ${
+                className={`relative rounded-2xl border-2 border-dashed p-8 sm:p-12 text-center cursor-pointer transition-all ${
                   dragOver
                     ? "border-tb-blue bg-blue-50 scale-[1.01]"
                     : "border-border hover:border-tb-blue/60 hover:bg-secondary/50"
