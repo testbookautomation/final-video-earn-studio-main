@@ -383,39 +383,119 @@ function SubmitPage() {
       </div>
 
       {isBusy && (
-        <div className="fixed inset-0 z-40 bg-white/30 backdrop-blur-sm pointer-events-none" aria-hidden="true" />
-      )}
-      {isBusy && (
-        <div className="fixed inset-x-0 top-20 z-50 px-4 pointer-events-none fade-up">
-          <div
-            role="status"
-            aria-live="polite"
-            className="pointer-events-auto mx-auto max-w-xl rounded-2xl border border-blue-200 bg-white/95 p-4 shadow-2xl backdrop-blur"
-          >
-            <div className="flex items-start gap-3">
-              <div className="size-11 rounded-2xl tb-gradient text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Star className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-black text-tb-navy">Uploading to Testbook</div>
-                  <div className="text-sm font-black text-tb-blue tabular-nums">{progressPct}%</div>
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40 bg-[#060d1f]/80 backdrop-blur-md" aria-hidden="true" />
+
+          {/* Centered modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-5 fade-up" role="status" aria-live="polite">
+            <div className="w-full max-w-xs rounded-[2rem] overflow-hidden"
+              style={{ background: "linear-gradient(160deg,#0f1f4a 0%,#112060 60%,#0d1a3e 100%)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,155,255,0.1)" }}>
+
+              {/* Top glow strip */}
+              <div className="h-px w-full" style={{ background: "linear-gradient(90deg,transparent,rgba(99,155,255,0.6),transparent)" }} />
+
+              {/* Main content */}
+              <div className="px-7 pt-8 pb-6 flex flex-col items-center">
+
+                {/* Circular progress ring */}
+                <div className="relative" style={{ width: 156, height: 156 }}>
+                  <svg width="156" height="156" viewBox="0 0 156 156" className="absolute inset-0" style={{ transform: "rotate(-90deg)" }}>
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#60a5fa" />
+                        <stop offset="50%" stopColor="#818cf8" />
+                        <stop offset="100%" stopColor="#a78bfa" />
+                      </linearGradient>
+                      <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                      </filter>
+                    </defs>
+                    {/* Track */}
+                    <circle cx="78" cy="78" r="66" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+                    {/* Progress */}
+                    <circle
+                      cx="78" cy="78" r="66"
+                      fill="none"
+                      stroke="url(#ringGrad)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      filter="url(#glow)"
+                      strokeDasharray={`${2 * Math.PI * 66}`}
+                      strokeDashoffset={`${2 * Math.PI * 66 * (1 - progressPct / 100)}`}
+                      style={{ transition: "stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1)" }}
+                    />
+                  </svg>
+
+                  {/* Center: logo + percent */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                    <img
+                      src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
+                      alt="Testbook"
+                      className="h-6 w-auto opacity-90"
+                    />
+                    <span className={`text-3xl font-black tabular-nums leading-none ${progressPct === 100 ? "text-emerald-400" : "text-white"}`}>
+                      {progressPct}%
+                    </span>
+                    {progressPct === 100 && (
+                      <CheckCircle2 className="size-4 text-emerald-400 mt-0.5" />
+                    )}
+                  </div>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-blue-100 overflow-hidden">
+
+                {/* Title + animated bars */}
+                <div className="mt-5 flex items-center gap-2">
+                  <span className="text-base font-black text-white tracking-tight">
+                    {progressPct === 100 ? "Upload Complete!" : "Uploading to Testbook"}
+                  </span>
+                  {progressPct < 100 && (
+                    <span className="flex gap-0.5 items-end" style={{ height: 14 }}>
+                      {[0, 1, 2].map((i) => (
+                        <span key={i} className="w-0.5 rounded-full bg-blue-400 animate-bounce"
+                          style={{ height: `${7 + i * 3}px`, animationDelay: `${i * 0.15}s` }} />
+                      ))}
+                    </span>
+                  )}
+                </div>
+
+                {/* Status text */}
+                <p className={`mt-1 text-xs font-medium ${progressPct === 100 ? "text-emerald-400" : "text-white/40"}`}>
+                  {progressPct < 30 && "Preparing your video…"}
+                  {progressPct >= 30 && progressPct < 70 && "Transferring to Testbook servers…"}
+                  {progressPct >= 70 && progressPct < 100 && "Almost there — finalising…"}
+                  {progressPct === 100 && "Your video is in — we'll review it shortly."}
+                </p>
+
+                {/* Flat linear bar (secondary) */}
+                <div className="mt-5 w-full h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
                   <div
-                    className="h-full tb-gradient rounded-full transition-all duration-300"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <div className="mt-3 rounded-xl bg-blue-50/80 border border-blue-100 p-3">
-                  <div className="text-xs font-bold uppercase tracking-wide text-tb-blue">Testbook Pass fact</div>
-                  <div className="mt-1 text-sm font-bold text-tb-navy">{currentFact.title}</div>
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{currentFact.body}</p>
+                    className="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+                    style={{ width: `${progressPct}%`, background: progressPct === 100 ? "#34d399" : "linear-gradient(90deg,#60a5fa,#818cf8)" }}
+                  >
+                    <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer-sweep_1.6s_ease-in-out_infinite]" />
+                  </div>
                 </div>
               </div>
+
+              {/* Divider */}
+              <div className="mx-6 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+
+              {/* Fact card */}
+              <div className="mx-4 my-4 rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Star className="size-3 fill-blue-400 text-blue-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">Testbook Pass Fact</span>
+                </div>
+                <div className="text-sm font-bold text-white/90 leading-snug">{currentFact.title}</div>
+                <p className="mt-1 text-xs text-white/45 leading-relaxed">{currentFact.body}</p>
+              </div>
+
+              {/* Bottom glow */}
+              <div className="h-px w-full" style={{ background: "linear-gradient(90deg,transparent,rgba(99,155,255,0.3),transparent)" }} />
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* UPI banner */}
