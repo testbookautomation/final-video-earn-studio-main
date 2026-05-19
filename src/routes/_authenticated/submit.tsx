@@ -33,11 +33,10 @@ const platforms = [
 ] as const;
 
 const payoutRules = [
-  { views: "10,000", amount: "₹500" },
-  { views: "50,000", amount: "₹2,500" },
-  { views: "1 Lakh", amount: "₹6,000" },
-  { views: "5 Lakh", amount: "₹15,000" },
-  { views: "10 Lakh", amount: "₹25,000" },
+  { views: "5,000 in 48h",   amount: "₹200" },
+  { views: "10,000 in 48h",  amount: "₹350" },
+  { views: "20,000 in 48h",  amount: "₹500" },
+  { views: "50,000+ in 48h", amount: "₹1,000" },
 ];
 
 const TESTBOOK_REFERRALS_URL = "https://testbook.com/referrals";
@@ -1073,7 +1072,7 @@ function SubmitPage() {
                   ))}
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-                  Payouts are cumulative. Example: 1 Lakh views earns ₹500 + ₹2,500 + ₹6,000 = ₹9,000 total. Payout is processed after review, eligibility confirmation, and valid UPI details.
+                  Payouts are cumulative. Example: 50,000+ views in 48h earns ₹200 + ₹350 + ₹500 + ₹1,000 = ₹2,050 total. Payout is processed after review, eligibility confirmation, and valid UPI details.
                 </p>
               </div>
               {[

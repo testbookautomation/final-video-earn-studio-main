@@ -104,6 +104,12 @@ function SOPPage() {
               </div>
             ))}
           </div>
+          <div className="mt-4 card p-5 flex items-start gap-3 border-amber-200 bg-amber-50/70">
+            <span className="text-xl leading-none">⭐️</span>
+            <p className="text-sm md:text-base font-semibold text-tb-navy leading-relaxed">
+              Or You can always create your own script! A viral script/edit will always work!
+            </p>
+          </div>
         </div>
 
         {/* Specs */}

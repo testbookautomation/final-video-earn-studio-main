@@ -5,14 +5,14 @@ import {
   Wallet, Send, FileText, Sparkles, AlertCircle, PartyPopper,
   ShieldCheck, XCircle, ExternalLink, RefreshCw,
 } from "lucide-react";
-import { getSubmission, getSubmissions, getUser, saveSubmission, setUser, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
+import { getSubmissions, getUser, saveSubmission, setUser, type TBSubmission, type SubmissionStatus } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Dashboard — Testbook Creator Lab" },
-      { name: "description", content: "Track your submission status, view milestones, and UPI payouts in real time." },
+      { name: "description", content: "Track your submission status, view milestones, and UPI incentives in real time." },
       { property: "og:title", content: "Dashboard — Testbook Creator Lab" },
       { property: "og:url", content: "/dashboard" },
     ],
@@ -21,11 +21,10 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const milestones = [
-  { v: 10000,   label: "10K",  pay: 500   },
-  { v: 50000,   label: "50K",  pay: 2500  },
-  { v: 100000,  label: "1L",   pay: 6000  },
-  { v: 500000,  label: "5L",   pay: 15000 },
-  { v: 1000000, label: "10L",  pay: 25000 },
+  { v: 5000,  label: "5K",   pay: 200  },
+  { v: 10000, label: "10K",  pay: 350  },
+  { v: 20000, label: "20K",  pay: 500  },
+  { v: 50000, label: "50K+", pay: 1000 },
 ];
 
 function earnedPayoutInr(views: number): number {
@@ -39,7 +38,7 @@ const timeline: { key: SubmissionStatus; label: string; desc: string }[] = [
   { key: "under_review",      label: "Under review",     desc: "Team is verifying" },
   { key: "approved",          label: "Approved",         desc: "Cleared to publish" },
   { key: "live",              label: "Published",        desc: "Views being tracked" },
-  { key: "milestone_reached", label: "Milestone hit",    desc: "Payout queued" },
+  { key: "milestone_reached", label: "Milestone hit",    desc: "Incentive queued" },
   { key: "paid",              label: "Paid via UPI",     desc: "Money sent" },
 ];
 
@@ -138,9 +137,25 @@ function displayUserName(name: string, phone: string): string {
   return name.trim() || (phone ? `+91 ${phone}` : "Creator");
 }
 
+function videoDate(submission: Pick<TBSubmission, "createdAt">): string {
+  return new Date(submission.createdAt).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function videoName(submission: Pick<TBSubmission, "createdAt" | "videoFileName">): string {
+  return submission.videoFileName || `Uploaded ${videoDate(submission)}`;
+}
+
+function videoOptionLabel(submission: TBSubmission): string {
+  return `ID ${submission.id} - ${videoName(submission)}`;
+}
+
 function DashboardPage() {
-  const [submission, setSubmission] = useState<TBSubmission | null>(null);
   const [submissions, setSubmissions] = useState<TBSubmission[]>([]);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState("");
   const [phone, setPhone] = useState("");
   const [userId, setUserId] = useState("");
   const [userName, setUserName] = useState("");
@@ -154,12 +169,14 @@ function DashboardPage() {
       setUserId(u.userId ?? u.phone);
       setUserName(u.name ?? "");
     }
-    setSubmission(getSubmission());
-    setSubmissions(getSubmissions());
     const sync = () => {
-      setSubmission(getSubmission());
-      setSubmissions(getSubmissions());
+      const next = getSubmissions();
+      setSubmissions(next);
+      setSelectedSubmissionId((current) =>
+        current && next.some((item) => item.id === current) ? current : next[0]?.id ?? "",
+      );
     };
+    sync();
     window.addEventListener("tb:submission", sync);
     return () => window.removeEventListener("tb:submission", sync);
   }, []);
@@ -262,9 +279,12 @@ function DashboardPage() {
           syncOne(sub).catch(() => { anyError = true; }),
         ),
       ).then(() => {
+        const next = getSubmissions();
         setSyncError(anyError ? "Sync failed — will retry" : null);
-        setSubmission(getSubmission());
-        setSubmissions(getSubmissions());
+        setSubmissions(next);
+        setSelectedSubmissionId((current) =>
+          current && next.some((item) => item.id === current) ? current : next[0]?.id ?? "",
+        );
       }).finally(() => {
         if (isFirstLoad) setSyncing(false);
       });
@@ -280,6 +300,8 @@ function DashboardPage() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [phone, userId]);
+
+  const submission = submissions.find((item) => item.id === selectedSubmissionId) ?? submissions[0] ?? null;
 
   if (!submission) {
     return <EmptyState phone={phone} name={userName} />;
@@ -302,8 +324,8 @@ function DashboardPage() {
     submitted:         { bg: "bg-blue-50",      icon: <Clock className="size-7 text-tb-blue" />,        label: "Submitted",        msg: "We received your video and it's in the queue." },
     under_review:      { bg: "bg-amber-50",     icon: <RefreshCw className="size-7 text-amber-500" />,  label: "Under Review",     msg: "Our team is verifying your video — usually done within 24 hours." },
     approved:          { bg: "bg-emerald-50",   icon: <CheckCircle2 className="size-7 text-emerald-600" />, label: "Approved",    msg: "Your video passed review. Views are now being tracked." },
-    live:              { bg: "bg-emerald-50",   icon: <Sparkles className="size-7 text-emerald-600" />, label: "Live & Tracking",  msg: "Your video is live — cross a milestone to unlock a payout." },
-    milestone_reached: { bg: "bg-violet-50",   icon: <PartyPopper className="size-7 text-violet-600" />,label: "Milestone Hit",   msg: "You crossed a payout milestone! Transfer will hit your UPI within 48h." },
+    live:              { bg: "bg-emerald-50",   icon: <Sparkles className="size-7 text-emerald-600" />, label: "Live & Tracking",  msg: "Your video is live — cross a milestone to unlock an incentive." },
+    milestone_reached: { bg: "bg-violet-50",   icon: <PartyPopper className="size-7 text-violet-600" />,label: "Milestone Hit",   msg: "You crossed an incentive milestone! Transfer will hit your UPI within 48h." },
     paid:              { bg: "bg-emerald-50",   icon: <PartyPopper className="size-7 text-emerald-600" />, label: "Paid via UPI", msg: "Money has been sent to your UPI account. Congratulations!" },
   } as const;
   const sm = statusMeta[displayStatus] ?? statusMeta["submitted"];
@@ -363,14 +385,14 @@ function DashboardPage() {
           </div>
         )}
 
-        {/* ── Payment eligible banner ── */}
+        {/* ── Incentive eligible banner ── */}
         {isPaymentEligible && !isRejected && displayStatus !== "paid" && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-4 fade-up">
             <div className="size-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
               <ShieldCheck className="size-5 text-emerald-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-bold text-emerald-800">Payment eligible</div>
+              <div className="font-bold text-emerald-800">Incentive eligible</div>
               <div className="text-sm text-emerald-700/80 mt-0.5">UPI transfer will be initiated within 48 hours.</div>
             </div>
             {earnedAmount > 0 && (
@@ -394,18 +416,34 @@ function DashboardPage() {
               <div className="text-2xl font-black text-tb-navy mt-0.5">{sm.label}</div>
               <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{sm.msg}</p>
             </div>
-            <div className="flex flex-wrap gap-2 shrink-0">
-              {(displayStatus === "approved" || displayStatus === "live" || displayStatus === "milestone_reached" || displayStatus === "paid") && (
-                <span className="badge badge-green text-xs"><CheckCircle2 className="size-3" /> Video approved</span>
-              )}
-              {isPaymentEligible && (
-                <span className="badge badge-green text-xs"><ShieldCheck className="size-3" /> Payment eligible</span>
-              )}
-              {submission.videoUrl && (
-                <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="badge hover:bg-blue-50 text-xs text-tb-blue">
-                  View video <ExternalLink className="size-3" />
-                </a>
-              )}
+            <div className="w-full sm:w-auto flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+              <label className="w-full sm:w-80">
+                <span className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Select video</span>
+                <select
+                  value={submission.id}
+                  onChange={(event) => setSelectedSubmissionId(event.target.value)}
+                  className="w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm font-semibold text-tb-navy shadow-sm outline-none transition focus:border-tb-blue focus:ring-2 focus:ring-tb-blue/20"
+                >
+                  {submissions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {videoOptionLabel(item)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-wrap justify-start sm:justify-end gap-2">
+                {(displayStatus === "approved" || displayStatus === "live" || displayStatus === "milestone_reached" || displayStatus === "paid") && (
+                  <span className="badge badge-green text-xs"><CheckCircle2 className="size-3" /> Video approved</span>
+                )}
+                {isPaymentEligible && (
+                  <span className="badge badge-green text-xs"><ShieldCheck className="size-3" /> Incentive eligible</span>
+                )}
+                {submission.videoUrl && (
+                  <a href={submission.videoUrl} target="_blank" rel="noreferrer" className="badge hover:bg-blue-50 text-xs text-tb-blue">
+                    View video <ExternalLink className="size-3" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
@@ -444,7 +482,7 @@ function DashboardPage() {
           )}
         </div>
 
-        {/* ── Metrics + Payout ── */}
+        {/* ── Metrics + Incentive ── */}
         <div className="grid lg:grid-cols-3 gap-5">
 
           {/* Views & engagement */}
@@ -456,7 +494,7 @@ function DashboardPage() {
               </div>
               {nextMilestone ? (
                 <div className="text-right shrink-0 bg-blue-50 border border-blue-100 rounded-xl p-3">
-                  <div className="text-[10px] font-bold text-tb-blue uppercase tracking-wide">Next payout</div>
+                  <div className="text-[10px] font-bold text-tb-blue uppercase tracking-wide">Next incentive</div>
                   <div className="text-sm font-bold text-tb-navy mt-0.5">{nextMilestone.label} views</div>
                   <div className="text-lg font-black text-tb-orange">₹{nextMilestone.pay.toLocaleString("en-IN")}</div>
                 </div>
@@ -485,14 +523,14 @@ function DashboardPage() {
             </div>
           </div>
 
-          {/* Payout card */}
+          {/* Incentive card */}
           <div className="card tb-gradient text-white relative overflow-hidden fade-up">
             <div className="absolute -top-12 -right-12 size-48 rounded-full bg-white/10 blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 size-32 rounded-full bg-indigo-700/20 blur-2xl pointer-events-none" />
             <div className="relative p-6 flex flex-col h-full justify-between gap-6">
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="badge bg-white/15 text-white border-white/20 text-xs"><Wallet className="size-3.5" /> UPI Payout</div>
+                  <div className="badge bg-white/15 text-white border-white/20 text-xs"><Wallet className="size-3.5" /> UPI Incentive</div>
                   {isPaymentEligible && (
                     <div className="badge bg-emerald-400/20 text-emerald-200 border-emerald-400/30 text-xs"><CheckCircle2 className="size-3" /> Eligible</div>
                   )}
@@ -516,7 +554,7 @@ function DashboardPage() {
                   {displayStatus === "paid"              ? "✓ Transferred to your UPI" :
                    displayStatus === "milestone_reached" ? "⏳ Queued — arrives within 48h" :
                    isPaymentEligible                     ? "⏳ Initiated — arrives within 48h" :
-                   "Cross 10K views to unlock ₹500"}
+                   "Cross 5K views in 48h to unlock ₹200"}
                 </div>
               </div>
             </div>
@@ -533,7 +571,7 @@ function DashboardPage() {
             </div>
             <div>
               <div className="font-bold text-tb-navy">Submit another video</div>
-              <div className="text-sm text-muted-foreground mt-0.5">More videos = more milestones = more payouts</div>
+              <div className="text-sm text-muted-foreground mt-0.5">More videos = more milestones = more incentives</div>
             </div>
             <ArrowRight className="size-4 text-muted-foreground ml-auto shrink-0 group-hover:text-tb-blue transition-colors" />
           </Link>
@@ -562,7 +600,7 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <div className="text-base font-bold text-tb-navy">Uploaded videos</div>
-          <div className="text-sm text-muted-foreground mt-0.5">Previous uploads, review status and payout state.</div>
+          <div className="text-sm text-muted-foreground mt-0.5">Previous uploads, review status and incentive state.</div>
         </div>
         <span className="badge text-xs">{submissions.length} total</span>
       </div>
@@ -572,8 +610,10 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted-foreground">
               <th className="py-3 pr-4 font-semibold">Video</th>
+              <th className="py-3 px-4 font-semibold">Link</th>
               <th className="py-3 px-4 font-semibold">Status</th>
-              <th className="py-3 px-4 font-semibold">Payment</th>
+              <th className="py-3 px-4 font-semibold">Views</th>
+              <th className="py-3 px-4 font-semibold">Incentive</th>
               <th className="py-3 pl-4 font-semibold text-right">Amount</th>
             </tr>
           </thead>
@@ -584,22 +624,34 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
               return (
                 <tr key={item.id} className="border-b border-border/70 last:border-0">
                   <td className="py-4 pr-4">
-                    <div className="font-semibold text-tb-navy truncate max-w-[280px]">
-                      {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
+                    <div className="font-semibold text-tb-navy truncate max-w-[220px]">
+                      {videoName(item)}
                     </div>
-                    <a
-                      href={item.cdnUrl || item.videoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
-                    >
-                      Open video <ExternalLink className="size-3" />
-                    </a>
+                    <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+                      ID {item.id}
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    {(item.cdnUrl || item.videoUrl) ? (
+                      <a
+                        href={item.cdnUrl || item.videoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-tb-blue hover:underline whitespace-nowrap"
+                      >
+                        Open <ExternalLink className="size-3" />
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="py-4 px-4">
                     <span className={`badge text-xs capitalize ${statusClasses(itemStatus)}`}>
                       {itemStatus.replace(/_/g, " ")}
                     </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="font-semibold text-tb-navy">{item.views > 0 ? item.views.toLocaleString("en-IN") : "—"}</div>
                   </td>
                   <td className="py-4 px-4">
                     <div className="font-medium text-tb-navy capitalize">{paymentLabel(item)}</div>
@@ -624,30 +676,39 @@ function UploadedVideos({ submissions }: { submissions: TBSubmission[] }) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-semibold text-tb-navy truncate">
-                    {item.videoFileName || `Video ${new Date(item.createdAt).toLocaleDateString("en-IN")}`}
+                    {videoName(item)}
                   </div>
-                  <a
-                    href={item.cdnUrl || item.videoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
-                  >
-                    Open video <ExternalLink className="size-3" />
-                  </a>
+                  <div className="mt-0.5 text-[11px] font-semibold text-muted-foreground">ID {item.id}</div>
                 </div>
-                <span className={`badge text-xs capitalize shrink-0 ${statusClasses(itemStatus)}`}>
-                  {itemStatus.replace(/_/g, " ")}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {(item.cdnUrl || item.videoUrl) && (
+                    <a
+                      href={item.cdnUrl || item.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-tb-blue hover:underline"
+                    >
+                      Link <ExternalLink className="size-3" />
+                    </a>
+                  )}
+                  <span className={`badge text-xs capitalize ${statusClasses(itemStatus)}`}>
+                    {itemStatus.replace(/_/g, " ")}
+                  </span>
+                </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
                 <div>
-                  <div className="text-xs text-muted-foreground">Payment</div>
+                  <div className="text-xs text-muted-foreground">Views</div>
+                  <div className="font-semibold text-tb-navy">{item.views > 0 ? item.views.toLocaleString("en-IN") : "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Incentive</div>
                   <div className="font-semibold text-tb-navy capitalize">{paymentLabel(item)}</div>
                 </div>
                 <div className="text-right">
-                <div className="text-xs text-muted-foreground">Amount</div>
-                <div className="font-black text-tb-navy">₹{itemAmount.toLocaleString("en-IN")}</div>
-              </div>
+                  <div className="text-xs text-muted-foreground">Amount</div>
+                  <div className="font-black text-tb-navy">₹{itemAmount.toLocaleString("en-IN")}</div>
+                </div>
               </div>
             </div>
           );
@@ -678,13 +739,13 @@ function EmptyState({ phone, name }: { phone: string; name: string }) {
       />
       <h1 className="mt-6 text-3xl font-bold text-tb-navy">Welcome, {displayName}!</h1>
       <p className="mt-3 text-base text-muted-foreground max-w-sm mx-auto leading-relaxed">
-        You haven't sent us a video yet. Create your first publish-ready video — payouts start at <strong className="text-tb-navy">10,000 views (₹500)</strong>.
+        You haven't sent us a video yet. Create your first publish-ready video — incentives start at <strong className="text-tb-navy">5,000 views in 48h (₹200)</strong>.
       </p>
       <div className="mt-10 grid sm:grid-cols-3 gap-4 text-left max-w-xl mx-auto">
         {[
           { n: "1", t: "Create the video", d: "30–60 second vertical video on your exam prep journey" },
           { n: "2", t: "Upload to Testbook", d: "Give us the final video file for review" },
-          { n: "3", t: "We publish and track", d: "Milestones on the published video trigger UPI payout" },
+          { n: "3", t: "We publish and track", d: "Milestones on the published video trigger UPI incentive" },
         ].map(({ n, t, d }) => (
           <div key={n} className="card p-5">
             <div className="size-8 rounded-full tb-gradient text-white text-sm font-bold flex items-center justify-center">{n}</div>

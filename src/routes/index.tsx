@@ -12,7 +12,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Testbook Creator Lab - Create videos Testbook can publish" },
-      { name: "description", content: "Create a short video for Testbook Pass, upload it to Testbook, and earn ₹500 to ₹25,000 via UPI when Testbook-published videos cross view milestones." },
+      { name: "description", content: "Create a short video for Testbook Pass, upload it to Testbook, and earn ₹200 to ₹1,000 via UPI when Testbook-published videos cross view milestones in 48 hours." },
       { property: "og:title", content: "Testbook Creator Lab - Create videos Testbook can publish" },
       { property: "og:description", content: "Upload your creator video to Testbook. We publish approved videos and pay UPI payouts based on view milestones." },
       { property: "og:url", content: "/" },
@@ -31,11 +31,10 @@ const steps = [
 ];
 
 const tiers = [
-  { views: "10,000 views", amount: "₹500",    color: "from-blue-500 to-indigo-500",    label: "Starter" },
-  { views: "50,000 views", amount: "₹2,500",  color: "from-indigo-500 to-violet-500",  label: "Rising" },
-  { views: "1 Lakh views", amount: "₹6,000",  color: "from-violet-500 to-fuchsia-500", label: "Popular" },
-  { views: "5 Lakh views", amount: "₹15,000", color: "from-fuchsia-500 to-orange-500", label: "Viral" },
-  { views: "10 Lakh views",amount: "₹25,000", color: "from-orange-500 to-rose-500",    label: "Top Creator" },
+  { views: "5,000 views in 48h",  amount: "₹200",  color: "from-blue-500 to-indigo-500",    label: "Starter" },
+  { views: "10,000 views in 48h", amount: "₹350",  color: "from-indigo-500 to-violet-500",  label: "Rising" },
+  { views: "20,000 views in 48h", amount: "₹500",  color: "from-violet-500 to-fuchsia-500", label: "Popular" },
+  { views: "50,000+ views in 48h",amount: "₹1,000",color: "from-fuchsia-500 to-orange-500", label: "Viral" },
 ];
 
 const dos = [
@@ -205,19 +204,40 @@ function HomePage() {
           <h2 className="mt-4 text-3xl md:text-4xl font-bold text-tb-navy">Cross a milestone, get paid</h2>
           <p className="mt-3 text-base text-muted-foreground">Payouts are cumulative — every milestone you cross adds to the next payout.</p>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {tiers.map((t, i) => {
             const popular = i === 2;
             return (
-              <div key={t.views} className={`card p-5 relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${popular ? "ring-2 ring-tb-blue/40 shadow-md" : ""}`}>
-                <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${t.color}`} />
-                <div className="mt-3">
-                  <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t.label}</div>
-                  <div className="text-base font-bold text-tb-navy mt-1">{t.views}</div>
+              <div key={t.views} className={`card relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${popular ? "ring-2 ring-tb-blue/40 shadow-md" : ""}`}>
+                {/* top bar on sm+, left bar on mobile */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 sm:w-auto sm:inset-x-0 sm:bottom-auto sm:h-1.5 bg-gradient-to-b sm:bg-gradient-to-r ${t.color}`} />
+
+                {/* mobile: horizontal row */}
+                <div className="flex items-center justify-between gap-3 pl-5 pr-4 py-4 sm:hidden">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t.label}</span>
+                      {popular && <span className="text-[10px] font-bold bg-tb-orange/10 text-tb-orange px-1.5 py-0.5 rounded-full">Popular</span>}
+                    </div>
+                    <div className="text-sm font-semibold text-tb-navy mt-0.5">{t.views}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-2xl font-black text-tb-orange">{t.amount}</div>
+                    <div className="text-[11px] text-muted-foreground font-medium">via UPI</div>
+                  </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-border">
-                  <div className="text-3xl font-black text-tb-orange">{t.amount}</div>
-                  <div className="text-xs text-muted-foreground mt-1 font-medium">paid via UPI within 48h</div>
+
+                {/* sm+: vertical card */}
+                <div className="hidden sm:block p-5 mt-1.5">
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t.label}</div>
+                    {popular && <span className="text-[10px] font-bold bg-tb-orange/10 text-tb-orange px-1.5 py-0.5 rounded-full leading-none">Popular</span>}
+                  </div>
+                  <div className="text-sm font-bold text-tb-navy mt-1">{t.views}</div>
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="text-3xl font-black text-tb-orange">{t.amount}</div>
+                    <div className="text-xs text-muted-foreground mt-1 font-medium">paid via UPI within 48h</div>
+                  </div>
                 </div>
               </div>
             );
@@ -230,7 +250,7 @@ function HomePage() {
           <div>
             <div className="text-sm font-bold text-tb-navy">Payouts are cumulative</div>
             <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
-              Example: if your video hits 1 Lakh views, you earn ₹500 + ₹2,500 + ₹6,000 = <strong className="text-tb-navy">₹9,000 total</strong>. Every milestone builds on the previous one.
+              Example: if your video hits 50,000+ views in 48h, you earn ₹200 + ₹350 + ₹500 + ₹1,000 = <strong className="text-tb-navy">₹2,050 total</strong>. Every milestone builds on the previous one.
             </p>
           </div>
         </div>

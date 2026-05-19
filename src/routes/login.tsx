@@ -55,7 +55,7 @@ type AuthApiResponse = {
 const perks = [
   "Create a 30–60s video on your exam journey",
   "Upload the final file to Testbook in under 5 minutes",
-  "Earn ₹500 – ₹25,000 directly to your UPI",
+  "Earn ₹200 – ₹1,000 directly to your UPI",
 ];
 
 const stats = [
@@ -430,7 +430,7 @@ function LoginPage() {
                   className="h-6 w-auto mx-auto mb-3 opacity-90"
                 />
                 <p className="text-sm font-semibold text-white/90 leading-relaxed">
-                  Share your story. Earn up to <span className="text-yellow-300 font-black">₹25,000</span> via UPI.
+                  Share your story. Earn up to <span className="text-yellow-300 font-black">₹1,000</span> via UPI.
                 </p>
                 <div className="flex justify-center gap-4 mt-3">
                   {stats.map(({ k, v }) => (
