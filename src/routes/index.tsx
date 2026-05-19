@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 const steps = [
   { Icon: LogIn,       title: "Login with phone",  desc: "OTP login in 30 seconds. Your linked UPI is checked automatically." },
   { Icon: Video,       title: "Create your video", desc: "Record a 30–60 second vertical video pitching Testbook Pass." },
-  { Icon: Upload,      title: "Send it to us",     desc: "Upload the finished video file directly to Testbook." },
+  { Icon: Upload,      title: "Send it to us",     desc: "Upload the finished video file directly in the Send Video section." },
   { Icon: ShieldCheck, title: "We publish it",     desc: "Our team reviews, approves, and publishes selected videos." },
   { Icon: Wallet,      title: "UPI payout",        desc: "Views on the Testbook-published video unlock payouts." },
 ];

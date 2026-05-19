@@ -671,7 +671,7 @@ function LoginPage() {
             <span className="size-1 rounded-full bg-border" />
             <a
               className="text-tb-blue font-medium hover:underline"
-              href="mailto:creators@testbook.com"
+              href="mailto:support@testbook.com"
             >
               Help
             </a>

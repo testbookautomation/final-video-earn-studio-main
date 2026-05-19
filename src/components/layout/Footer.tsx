@@ -94,13 +94,13 @@ export function Footer() {
           <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Support</div>
           <div className="space-y-3">
             <a
-              href="mailto:creators@testbook.com"
+              href="mailto:support@testbook.com"
               className="flex items-center gap-2.5 text-sm text-white/65 hover:text-white transition-colors"
             >
               <span className="size-7 rounded-lg bg-white/8 flex items-center justify-center shrink-0">
                 <Mail className="size-3.5" />
               </span>
-              creators@testbook.com
+              support@testbook.com
             </a>
             <a
               href="https://creatorlabs.testbook.com"

@@ -211,19 +211,6 @@ function TermsPage() {
             </section>
           ))}
 
-          {/* Footer contact */}
-          <div className="card p-6 tb-gradient text-white">
-            <div className="text-base font-semibold mb-3">Testbook Creators Lab</div>
-            <div className="space-y-2 text-sm text-white/80">
-              <a href="mailto:creator-support@testbook.com" className="flex items-center gap-2 hover:text-white">
-                <Mail className="size-4" /> creator-support@testbook.com
-              </a>
-              <a href="https://ugc.testbook.com" className="flex items-center gap-2 hover:text-white">
-                <Globe className="size-4" /> ugc.testbook.com
-              </a>
-            </div>
-            <p className="mt-4 text-xs text-white/60">© 2026 Testbook.com. All rights reserved.</p>
-          </div>
 
           {/* Bottom CTA */}
           <div className="flex flex-wrap gap-3 pt-2">

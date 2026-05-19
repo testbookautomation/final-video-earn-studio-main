@@ -1094,10 +1094,6 @@ function SubmitPage() {
                   <p>{b}</p>
                 </div>
               ))}
-              <div className="text-xs text-muted-foreground border-t border-border pt-4">
-                Testbook Creators Lab · creator-support@testbook.com · ugc.testbook.com<br />
-                © 2026 Testbook.com. All rights reserved.
-              </div>
             </div>
 
             <div className="px-6 py-4 border-t border-border shrink-0 flex flex-col sm:flex-row gap-3">
