@@ -3,7 +3,7 @@ import { Home, FileText, Send, LayoutDashboard } from "lucide-react";
 
 const items = [
   { to: "/", label: "Home", Icon: Home },
-  { to: "/sop", label: "SOP", Icon: FileText },
+  { to: "/how-to", label: "How To", Icon: FileText },
   { to: "/submit", label: "Submit", Icon: Send },
   { to: "/dashboard", label: "Stats", Icon: LayoutDashboard },
 ] as const;

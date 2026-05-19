@@ -4,15 +4,15 @@ import {
   AlertTriangle, Smartphone, PlayCircle,
 } from "lucide-react";
 
-export const Route = createFileRoute("/sop")({
+export const Route = createFileRoute("/how-to")({
   head: () => ({
     meta: [
-      { title: "Creator SOP — Testbook Creator Lab" },
+      { title: "How To — Testbook Creator Lab" },
       { name: "description", content: "Step-by-step creator guide: video specs, do's and don'ts, rejection reasons, and handoff notes for videos Testbook can publish." },
-      { property: "og:title", content: "Creator SOP — Testbook Creator Lab" },
-      { property: "og:url", content: "/sop" },
+      { property: "og:title", content: "How To — Testbook Creator Lab" },
+      { property: "og:url", content: "/how-to" },
     ],
-    links: [{ rel: "canonical", href: "/sop" }],
+    links: [{ rel: "canonical", href: "/how-to" }],
   }),
   component: SOPPage,
 });
@@ -85,7 +85,7 @@ function SOPPage() {
               className="h-7 w-auto opacity-90"
             />
           </div>
-          <span className="badge bg-white/10 text-white border-white/20"><Lightbulb className="size-3.5" /> Creator SOP</span>
+          <span className="badge bg-white/10 text-white border-white/20"><Lightbulb className="size-3.5" /> How To</span>
           <h1 className="mt-3 text-3xl md:text-5xl font-bold tb-text-gradient">The 60-second formula that gets approved</h1>
           <p className="mt-4 max-w-2xl text-white/80">Read this once, record the video, and upload the final file to Testbook. We approve ~85% of submissions on the first try when creators follow this.</p>
         </div>

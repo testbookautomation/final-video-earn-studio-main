@@ -93,8 +93,8 @@ function HomePage() {
               <Link to="/submit" className="btn-orange text-base px-6 py-3.5">
                 Send your video <ArrowRight className="size-4" />
               </Link>
-              <Link to="/sop" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/18 hover:text-white text-base px-6 py-3.5">
-                Read Creator SOP
+              <Link to="/how-to" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/18 hover:text-white text-base px-6 py-3.5">
+                How To
               </Link>
             </div>
 
@@ -135,7 +135,7 @@ function HomePage() {
                 <div className="text-xs font-bold text-tb-navy mb-1.5 uppercase tracking-wide">Hook idea</div>
                 <p className="text-sm text-foreground/75 leading-relaxed italic">"Stop wasting ₹2000/month on coaching — here's what I switched to."</p>
               </div>
-              <Link to="/sop" className="mt-5 btn-primary w-full text-sm">Read full brief & guidelines</Link>
+              <Link to="/how-to" className="mt-5 btn-primary w-full text-sm">How To</Link>
             </div>
           </div>
         </div>

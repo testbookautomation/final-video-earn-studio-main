@@ -57,7 +57,7 @@ export function Footer() {
           <ul className="space-y-2.5">
             {[
               { to: "/", label: "How it works" },
-              { to: "/sop", label: "Creator SOP" },
+              { to: "/how-to", label: "How To" },
               { to: "/submit", label: "Send a video" },
               { to: "/dashboard", label: "My dashboard" },
             ].map(({ to, label }) => (

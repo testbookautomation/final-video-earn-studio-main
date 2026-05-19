@@ -5,7 +5,7 @@ import { clearUser, getUser, type TBUser } from "@/lib/auth";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/sop", label: "How To" },
+  { to: "/how-to", label: "How To" },
   { to: "/submit", label: "Send Video" },
   { to: "/dashboard", label: "Dashboard" },
 ] as const;
@@ -99,7 +99,7 @@ export function Navbar() {
                   <Link to="/submit" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary">
                     <Send className="size-4" /> Send video
                   </Link>
-                  <Link to="/sop" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary">
+                  <Link to="/how-to" className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-secondary">
                     <FileText className="size-4" /> How To
                   </Link>
                   <button

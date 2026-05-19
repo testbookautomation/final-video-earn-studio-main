@@ -575,12 +575,12 @@ function DashboardPage() {
             </div>
             <ArrowRight className="size-4 text-muted-foreground ml-auto shrink-0 group-hover:text-tb-blue transition-colors" />
           </Link>
-          <Link to="/sop" className="card p-5 flex items-center gap-4 hover:border-tb-blue hover:shadow-md transition-all group">
+          <Link to="/how-to" className="card p-5 flex items-center gap-4 hover:border-tb-blue hover:shadow-md transition-all group">
             <div className="size-12 rounded-xl bg-blue-100 text-tb-blue flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <FileText className="size-5" />
             </div>
             <div>
-              <div className="font-bold text-tb-navy">Re-read Creator SOP</div>
+              <div className="font-bold text-tb-navy">How To</div>
               <div className="text-sm text-muted-foreground mt-0.5">Tips that boost your approval rate to 90%+</div>
             </div>
             <ArrowRight className="size-4 text-muted-foreground ml-auto shrink-0 group-hover:text-tb-blue transition-colors" />

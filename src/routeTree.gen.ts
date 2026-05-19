@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SopRouteImport } from './routes/sop'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HowToRouteImport } from './routes/how-to'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
@@ -30,14 +30,14 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SopRoute = SopRouteImport.update({
-  id: '/sop',
-  path: '/sop',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowToRoute = HowToRouteImport.update({
+  id: '/how-to',
+  path: '/how-to',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -102,8 +102,8 @@ const ApiAuthSendOtpRoute = ApiAuthSendOtpRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
-  '/sop': typeof SopRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/submit': typeof AuthenticatedSubmitRoute
@@ -118,8 +118,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
-  '/sop': typeof SopRoute
   '/terms': typeof TermsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/submit': typeof AuthenticatedSubmitRoute
@@ -136,8 +136,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
-  '/sop': typeof SopRoute
   '/terms': typeof TermsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/submit': typeof AuthenticatedSubmitRoute
@@ -154,8 +154,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/how-to'
     | '/login'
-    | '/sop'
     | '/terms'
     | '/dashboard'
     | '/submit'
@@ -170,8 +170,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/how-to'
     | '/login'
-    | '/sop'
     | '/terms'
     | '/dashboard'
     | '/submit'
@@ -187,8 +187,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/how-to'
     | '/login'
-    | '/sop'
     | '/terms'
     | '/_authenticated/dashboard'
     | '/_authenticated/submit'
@@ -205,8 +205,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  HowToRoute: typeof HowToRoute
   LoginRoute: typeof LoginRoute
-  SopRoute: typeof SopRoute
   TermsRoute: typeof TermsRoute
   ApiFetchUpiRoute: typeof ApiFetchUpiRoute
   ApiSubmitRoute: typeof ApiSubmitRoute
@@ -227,18 +227,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sop': {
-      id: '/sop'
-      path: '/sop'
-      fullPath: '/sop'
-      preLoaderRoute: typeof SopRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-to': {
+      id: '/how-to'
+      path: '/how-to'
+      fullPath: '/how-to'
+      preLoaderRoute: typeof HowToRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -345,8 +345,8 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  HowToRoute: HowToRoute,
   LoginRoute: LoginRoute,
-  SopRoute: SopRoute,
   TermsRoute: TermsRoute,
   ApiFetchUpiRoute: ApiFetchUpiRoute,
   ApiSubmitRoute: ApiSubmitRoute,
