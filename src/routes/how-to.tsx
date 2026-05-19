@@ -196,12 +196,15 @@ function SOPPage() {
               <div key={video.src} className="card overflow-hidden">
                 <div className="bg-tb-navy aspect-[9/16]">
                   <video
-                    src={video.src}
                     className="h-full w-full object-cover"
                     controls
                     playsInline
                     preload="metadata"
-                  />
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                  >
+                    <source src={video.src} type="video/mp4" />
+                  </video>
                 </div>
                 <div className="p-4">
                   <div className="font-bold text-tb-navy text-sm">{video.title}</div>
