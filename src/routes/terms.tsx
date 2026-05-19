@@ -4,9 +4,9 @@ import { ScrollText, ChevronRight, Mail, Globe } from "lucide-react";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — Testbook Creator Lab" },
+      { title: "Terms & Conditions — Creators Lab" },
       { name: "description", content: "Read the full Terms & Conditions governing your participation in the Testbook Creators Lab campaign." },
-      { property: "og:title", content: "Terms & Conditions — Testbook Creator Lab" },
+      { property: "og:title", content: "Terms & Conditions — Creators Lab" },
       { property: "og:url", content: "/terms" },
     ],
     links: [{ rel: "canonical", href: "/terms" }],

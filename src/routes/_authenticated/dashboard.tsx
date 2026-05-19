@@ -11,9 +11,9 @@ import { track } from "@/lib/analytics";
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Testbook Creator Lab" },
+      { title: "Dashboard — Creators Lab" },
       { name: "description", content: "Track your submission status, view milestones, and UPI incentives in real time." },
-      { property: "og:title", content: "Dashboard — Testbook Creator Lab" },
+      { property: "og:title", content: "Dashboard — Creators Lab" },
       { property: "og:url", content: "/dashboard" },
     ],
   }),

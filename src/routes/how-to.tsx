@@ -7,9 +7,9 @@ import {
 export const Route = createFileRoute("/how-to")({
   head: () => ({
     meta: [
-      { title: "How To — Testbook Creator Lab" },
+      { title: "How To — Creators Lab" },
       { name: "description", content: "Step-by-step creator guide: video specs, do's and don'ts, rejection reasons, and handoff notes for videos Testbook can publish." },
-      { property: "og:title", content: "How To — Testbook Creator Lab" },
+      { property: "og:title", content: "How To — Creators Lab" },
       { property: "og:url", content: "/how-to" },
     ],
     links: [{ rel: "canonical", href: "/how-to" }],
@@ -57,19 +57,24 @@ const rejections = [
 
 const demoVideos = [
   {
-    title: "Demo video 1",
+    title: "UP Police Constable Mock",
     note: "Notice the quick hook, simple language, and clear Testbook Pass mention.",
-    src: "https://cdn.testbook.com/1779137980733-videoplayback%20%281%29.mp4/1779137981.mp4",
+    src: "https://cdn.testbook.com/1779227085899-UP%20Police%20Constable%20Mock%20%23testbook%20%23mocktest%20%23uppolice%20%23uppoliceconstable%20%23exam%20%23rojgarwithankit.mp4/1779227087.mp4",
   },
   {
-    title: "Demo video 2",
+    title: "UP Police New Full Mock Test",
     note: "Use this as a reference for pacing, framing, and keeping the message tight.",
-    src: "https://cdn.testbook.com/1779137980734-videoplayback.mp4/1779137981.mp4",
+    src: "https://cdn.testbook.com/1779227085900-UPPOLICE%F0%9F%9A%A8New%20Full%20MockTest-07%20Testbook%F0%9F%93%9D%23uppolice%20%23uppoliceexam%20%23testbookmock%20%23testbook%20%23upsi%20%23upp.mp4/1779227087.mp4",
   },
   {
-    title: "Exam update style",
+    title: "SSC CGL Pre Mock",
     note: "A good example of making the topic exam-specific while staying easy to watch.",
-    src: "https://cdn.testbook.com/1779137980734-UP%20Police%20%E0%A4%AE%E0%A5%87%E0%A4%82%20%E0%A4%86%E0%A4%88%201%20%E0%A4%B2%E0%A4%BE%E0%A4%96%20%E0%A4%B8%E0%A5%87%20%E0%A4%9C%E0%A4%BC%E0%A5%8D%E0%A4%AF%E0%A4%BE%E0%A4%A6%E0%A4%BE%20%E0%A4%AD%E0%A4%B0%E0%A5%8D%E0%A4%A4%E0%A5%80%20%F0%9F%94%A5%F0%9F%93%9A....%23uppolice%20%23uppoliceconstableexam%20%23uppoliceconsta.mp4/1779137981.mp4",
+    src: "https://cdn.testbook.com/1779227085900-testbook%20CGL%20pre%20mock-1%20with%20sectional%20timing%23ssccgl%23ssccgl2026%23cgl2026%23chsl2026%23motivation%23shorts.mp4/1779227087.mp4",
+  },
+  {
+    title: "UPP Constable Sipahi Shukravar",
+    note: "Strong structure with a clear call to action — great format to follow.",
+    src: "https://cdn.testbook.com/1779227085900-UPP%20CONSTABLE%20MOCK%20TEST%20SIPAHI%20SHUKRAVAR%2015%20MAY%E2%9C%85%20%23uppolice%20%23upp%20%23testbook%20%23uppmocktest%20%23motivation.mp4/1779227087.mp4",
   },
 ];
 
@@ -186,7 +191,7 @@ function SOPPage() {
         <div>
           <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><PlayCircle className="size-5 text-tb-blue" /> Demo videos: how to make yours</h2>
           <p className="mt-2 text-sm text-muted-foreground">Watch these examples before recording. Follow the structure, then upload your own final file to Testbook.</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {demoVideos.map((video) => (
               <div key={video.src} className="card overflow-hidden">
                 <div className="bg-tb-navy aspect-[9/16]">

@@ -25,13 +25,13 @@ import { track } from "@/lib/analytics";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Login — Testbook Creator Lab" },
+      { title: "Login — Creators Lab" },
       {
         name: "description",
         content:
           "Login with your phone number and OTP to start submitting videos and tracking payouts.",
       },
-      { property: "og:title", content: "Login — Testbook Creator Lab" },
+      { property: "og:title", content: "Login — Creators Lab" },
       { property: "og:url", content: "/login" },
     ],
     links: [{ rel: "canonical", href: "/login" }],
@@ -312,7 +312,7 @@ function LoginPage() {
               className="h-8 w-auto"
             />
             <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/40">
-              Creator Lab
+              Creators Lab
             </div>
           </div>
           {/* Live badge */}
@@ -343,7 +343,7 @@ function LoginPage() {
               </span>
             </h2>
             <p className="mt-5 text-white/65 text-sm max-w-sm leading-relaxed">
-              Upload your finished file to Creator Lab — Testbook publishes approved videos and pays you when milestones are hit.
+              Upload your finished file to Creators Lab — Testbook publishes approved videos and pays you when milestones are hit.
             </p>
           </div>
 

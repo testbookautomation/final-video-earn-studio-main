@@ -18,9 +18,9 @@ import {
 export const Route = createFileRoute("/_authenticated/submit")({
   head: () => ({
     meta: [
-      { title: "Send Video - Testbook Creator Lab" },
+      { title: "Send Video - Creators Lab" },
       { name: "description", content: "Upload your Testbook Pass video to Testbook for review, publishing, and UPI payout tracking." },
-      { property: "og:title", content: "Send Video - Testbook Creator Lab" },
+      { property: "og:title", content: "Send Video - Creators Lab" },
       { property: "og:url", content: "/submit" },
     ],
   }),

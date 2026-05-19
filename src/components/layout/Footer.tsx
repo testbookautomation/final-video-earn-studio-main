@@ -28,7 +28,7 @@ export function Footer() {
               className="h-7 w-auto"
             />
             <div className="h-4 w-px bg-white/20" />
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/60">Creator Lab</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-white/60">Creators Lab</span>
           </div>
           <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-[220px]">
             India's largest exam-prep platform. Earn UPI payouts by creating videos Testbook can publish.

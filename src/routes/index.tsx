@@ -11,9 +11,9 @@ import { track } from "@/lib/analytics";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Testbook Creator Lab - Create videos Testbook can publish" },
+      { title: "Creators Lab - Create videos Testbook can publish" },
       { name: "description", content: "Create a short video for Testbook Pass, upload it to Testbook, and earn ₹200 to ₹1,000 via UPI when Testbook-published videos cross view milestones in 48 hours." },
-      { property: "og:title", content: "Testbook Creator Lab - Create videos Testbook can publish" },
+      { property: "og:title", content: "Creators Lab - Create videos Testbook can publish" },
       { property: "og:description", content: "Upload your creator video to Testbook. We publish approved videos and pay UPI payouts based on view milestones." },
       { property: "og:url", content: "/" },
     ],
@@ -51,7 +51,7 @@ const donts = [
 ];
 
 const faqs = [
-  { q: "Who can apply to Creator Lab?", a: "Any student or aspirant in India with a public Instagram or YouTube profile. Min 500 followers recommended but not mandatory — content quality matters more." },
+  { q: "Who can apply to Creators Lab?", a: "Any student or aspirant in India with a public Instagram or YouTube profile. Min 500 followers recommended but not mandatory — content quality matters more." },
   { q: "When do I get paid?", a: "Within 48 hours of the Testbook-published video crossing each view milestone. Payouts are sent directly to the UPI ID linked to your phone number." },
   { q: "Can I submit more than one video?", a: "Yes. Upload each finished video as a separate entry. Testbook will review and decide which videos to publish." },
   { q: "What if my video is rejected?", a: "You'll get a reason in your dashboard. You can revise and resubmit. We approve ~85% of submissions on the first try." },

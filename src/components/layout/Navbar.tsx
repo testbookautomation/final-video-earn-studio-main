@@ -56,7 +56,7 @@ export function Navbar() {
             className="h-8 w-auto"
           />
           <div className="h-5 w-px bg-border" />
-          <span className="text-xs font-bold text-tb-blue tracking-widest uppercase">Creator Lab</span>
+          <span className="text-xs font-bold text-tb-blue tracking-widest uppercase">Creators Lab</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -145,7 +145,7 @@ export function Navbar() {
                 Sign out
               </button>
             ) : location.pathname !== "/login" ? (
-              <Link to="/login" className="btn-primary mt-2 text-sm">Login to Creator Lab</Link>
+              <Link to="/login" className="btn-primary mt-2 text-sm">Login to Creators Lab</Link>
             ) : null}
           </div>
         </div>
