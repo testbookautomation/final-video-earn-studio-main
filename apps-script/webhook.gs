@@ -732,14 +732,32 @@ function setupSheets() {
     ScriptApp.newTrigger("onEdit").forSpreadsheet(getSpreadsheet()).onEdit().create();
   }
 
-  // Install hourly sync trigger for Review & Pay
-  var hasSync = triggers.some(function(t) { return t.getHandlerFunction() === "syncReviewSheet"; });
-  if (!hasSync) {
-    ScriptApp.newTrigger("syncReviewSheet").timeBased().everyHours(1).create();
+  // Install 5-minute sync trigger for Review & Pay (replaces hourly if present)
+  var hasFastSync = triggers.some(function(t) {
+    return t.getHandlerFunction() === "syncReviewSheet" &&
+           t.getTriggerSource() === ScriptApp.TriggerSource.CLOCK;
+  });
+  if (!hasFastSync) {
+    // Remove any stale hourly trigger first
+    triggers.forEach(function(t) {
+      if (t.getHandlerFunction() === "syncReviewSheet") ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger("syncReviewSheet").timeBased().everyMinutes(5).create();
   }
 
   SpreadsheetApp.flush();
-  getSpreadsheet().toast("All sheets ready!", "Setup complete", 5);
+  getSpreadsheet().toast("All sheets ready! Sync runs every 5 min.", "Setup complete", 5);
+}
+
+/* ── Trigger reset (run manually if triggers are stale) ────── */
+
+function resetTriggers() {
+  ScriptApp.getProjectTriggers().forEach(function(t) { ScriptApp.deleteTrigger(t); });
+
+  var ss = getSpreadsheet();
+  ScriptApp.newTrigger("onEdit").forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger("syncReviewSheet").timeBased().everyMinutes(5).create();
+  Logger.log("Triggers reset: onEdit + syncReviewSheet every 5 min.");
 }
 
 function applyDropdown(sheet, col, header, list) {

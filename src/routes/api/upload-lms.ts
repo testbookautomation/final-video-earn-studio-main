@@ -19,7 +19,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
   EVENT, fireEvent,
-  lmsLogin, lmsGetPresignedUrl, lmsUploadToPresignedUrl,
+  lmsGetAdminToken, lmsGetPresignedUrl, lmsUploadToPresignedUrl,
   cleanFileName, getFileExt,
 } from "@/lib/lms";
 import {
@@ -90,7 +90,7 @@ export const Route = createFileRoute("/api/upload-lms")({
 
           let token: string;
           try {
-            token = await lmsLogin();
+            token = await lmsGetAdminToken();
           } catch (err) {
             await fireEvent(EVENT.VIDEO_UPLOAD_FAILED, {
               reason: "lms_auth_failed",

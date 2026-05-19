@@ -5,6 +5,7 @@ import {
   LogIn, Video, Upload, ShieldCheck, Wallet, ChevronDown, ListChecks,
   Zap, Clock, X,
 } from "lucide-react";
+import { getUser, type TBUser } from "@/lib/auth";
 import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/")({
@@ -60,8 +61,20 @@ const faqs = [
 
 function HomePage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [user, setUser] = useState<TBUser | null>(null);
 
   useEffect(() => { track("page_view", { page: "/" }); }, []);
+
+  useEffect(() => {
+    const sync = () => setUser(getUser());
+    sync();
+    window.addEventListener("tb:auth", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("tb:auth", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
 
   return (
     <>
@@ -198,11 +211,6 @@ function HomePage() {
             return (
               <div key={t.views} className={`card p-5 relative overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${popular ? "ring-2 ring-tb-blue/40 shadow-md" : ""}`}>
                 <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${t.color}`} />
-                {popular && (
-                  <div className="absolute top-4 right-3">
-                    <span className="badge badge-orange text-xs py-0.5 px-2">Most Popular</span>
-                  </div>
-                )}
                 <div className="mt-3">
                   <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{t.label}</div>
                   <div className="text-base font-bold text-tb-navy mt-1">{t.views}</div>
@@ -266,7 +274,11 @@ function HomePage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3 justify-center">
               <Link to="/submit" className="btn-orange text-base px-8 py-3.5">Send your video <ArrowRight className="size-4" /></Link>
-              <Link to="/login" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">Login first</Link>
+              {user ? (
+                <Link to="/dashboard" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">View dashboard</Link>
+              ) : (
+                <Link to="/login" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">Login first</Link>
+              )}
             </div>
           </div>
         </div>

@@ -48,6 +48,7 @@ const order: SubmissionStatus[] = ["submitted","under_review","approved","live",
 type SyncResult = {
   ok: boolean;
   found: boolean;
+  sheetSubmissionId?: string;
   status?: SubmissionStatus;
   rejectionReason?: string;
   views?: number;
@@ -199,72 +200,74 @@ function DashboardPage() {
     const TERMINAL: SubmissionStatus[] = ["paid", "rejected"];
     const POLL_MS = 30_000;
 
-    const doSync = (isFirstLoad = false) => {
-      const cur = getSubmission();
-      if (cur && TERMINAL.includes(cur.status)) return;
-      if (isFirstLoad) setSyncing(true);
-
-      const submissionId = getSubmission()?.id ?? "";
-      const syncUrl = `/api/sync-status?submissionId=${encodeURIComponent(submissionId)}&phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`;
-      fetch(syncUrl)
+    const syncOne = (sub: TBSubmission): Promise<void> => {
+      const syncUrl = `/api/sync-status?submissionId=${encodeURIComponent(sub.id)}&phone=${encodeURIComponent(phone)}&userId=${encodeURIComponent(userId)}`;
+      return fetch(syncUrl)
         .then((r) => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
+          return r.json() as Promise<SyncResult>;
         })
-        .then((data: SyncResult) => {
-          if (!data.ok) {
-            setSyncError("Sync failed — will retry");
-            return;
-          }
-          setSyncError(null);
-          if (!data.found) return;
-          const current = getSubmission();
-          if (!current) return;
+        .then((data) => {
+          if (!data.ok || !data.found) return;
           const synced: TBSubmission = {
-            ...current,
-            status:            data.status ?? current.status,
-            rejectionReason:   data.rejectionReason ?? current.rejectionReason,
-            payoutEligibility: data.payoutEligibility ?? current.payoutEligibility,
-            payoutStatus:      data.payoutStatus ?? current.payoutStatus,
-            views:             data.views    ?? current.views,
-            likes:             data.likes    ?? current.likes,
-            comments:          data.comments ?? current.comments,
-            payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : current.payoutInr,
-            upi:               data.upi && data.upi.length > 2 ? data.upi : current.upi,
+            ...sub,
+            status:            data.status            ?? sub.status,
+            rejectionReason:   data.rejectionReason   ?? sub.rejectionReason,
+            payoutEligibility: data.payoutEligibility ?? sub.payoutEligibility,
+            payoutStatus:      data.payoutStatus      ?? sub.payoutStatus,
+            views:             data.views             ?? sub.views,
+            likes:             data.likes             ?? sub.likes,
+            comments:          data.comments          ?? sub.comments,
+            payoutInr:         data.payoutInr && data.payoutInr > 0 ? data.payoutInr : sub.payoutInr,
+            upi:               data.upi && data.upi.length > 2 ? data.upi : sub.upi,
           };
           const updated: TBSubmission = {
             ...synced,
             payoutInr: displayPayoutInr(synced),
-            status: effectiveStatus(synced),
+            status:    effectiveStatus(synced),
           };
-          if (JSON.stringify(updated) !== JSON.stringify(current)) {
-            const payload = {
-              submissionId: current.id,
-              previousStatus: current.status,
-              status: updated.status,
-              previousPayoutEligibility: current.payoutEligibility ?? "",
-              payoutEligibility: updated.payoutEligibility ?? "",
-              previousPayoutStatus: current.payoutStatus ?? "",
-              payoutStatus: updated.payoutStatus ?? "",
-              payoutInr: updated.payoutInr,
-              views: updated.views,
-              rejectionReason: updated.rejectionReason ?? "",
-            };
-            const statusEvent = current.status !== updated.status ? statusEventName(updated.status) : null;
-            const firedEvents = new Set<string>();
-            if (statusEvent) { track(statusEvent, { page: "/dashboard", payload }); firedEvents.add(statusEvent); }
-            if (!isEligible(current.payoutEligibility) && isEligible(updated.payoutEligibility)) {
-              track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
-            }
-            const payoutEvent = current.payoutStatus !== updated.payoutStatus ? paymentStatusEventName(updated.payoutStatus) : null;
-            if (payoutEvent && !firedEvents.has(payoutEvent)) track(payoutEvent, { page: "/dashboard", payload });
-            saveSubmission(updated);
-            setSubmission(updated);
-            setSubmissions(getSubmissions());
+          if (JSON.stringify(updated) === JSON.stringify(sub)) return;
+          const payload = {
+            submissionId:              sub.id,
+            previousStatus:            sub.status,
+            status:                    updated.status,
+            previousPayoutEligibility: sub.payoutEligibility ?? "",
+            payoutEligibility:         updated.payoutEligibility ?? "",
+            previousPayoutStatus:      sub.payoutStatus ?? "",
+            payoutStatus:              updated.payoutStatus ?? "",
+            payoutInr:                 updated.payoutInr,
+            views:                     updated.views,
+            rejectionReason:           updated.rejectionReason ?? "",
+          };
+          const firedEvents = new Set<string>();
+          const statusEvent = sub.status !== updated.status ? statusEventName(updated.status) : null;
+          if (statusEvent) { track(statusEvent, { page: "/dashboard", payload }); firedEvents.add(statusEvent); }
+          if (!isEligible(sub.payoutEligibility) && isEligible(updated.payoutEligibility)) {
+            track("UGC_creators_payment_eligible", { page: "/dashboard", payload });
           }
-        })
-        .catch(() => setSyncError("Network error — will retry"))
-        .finally(() => { if (isFirstLoad) setSyncing(false); });
+          const payoutEvent = sub.payoutStatus !== updated.payoutStatus ? paymentStatusEventName(updated.payoutStatus) : null;
+          if (payoutEvent && !firedEvents.has(payoutEvent)) track(payoutEvent, { page: "/dashboard", payload });
+          saveSubmission(updated);
+        });
+    };
+
+    const doSync = (isFirstLoad = false) => {
+      const toSync = getSubmissions().filter((s) => !TERMINAL.includes(s.status));
+      if (toSync.length === 0) return;
+      if (isFirstLoad) setSyncing(true);
+
+      let anyError = false;
+      Promise.all(
+        toSync.map((sub) =>
+          syncOne(sub).catch(() => { anyError = true; }),
+        ),
+      ).then(() => {
+        setSyncError(anyError ? "Sync failed — will retry" : null);
+        setSubmission(getSubmission());
+        setSubmissions(getSubmissions());
+      }).finally(() => {
+        if (isFirstLoad) setSyncing(false);
+      });
     };
 
     doSync(true);

@@ -54,6 +54,7 @@ export const Route = createFileRoute("/api/sync-status")({
           const data = await res.json() as {
             success?: boolean;
             submission?: {
+              submissionId?: string;
               status?: string;
               rejectionReason?: string;
               metrics?: { views?: number; likes?: number; comments?: number };
@@ -76,6 +77,7 @@ export const Route = createFileRoute("/api/sync-status")({
           return new Response(JSON.stringify({
             ok: true,
             found: true,
+            sheetSubmissionId: s.submissionId       ?? "",
             status:            mapStatus(s.status ?? ""),
             rejectionReason:   s.rejectionReason ?? "",
             views:             s.metrics?.views    ?? 0,

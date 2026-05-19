@@ -11,7 +11,7 @@ const LMS_ADMIN_API = "https://lms-api.testbook.com/api/v2/admin";
 const STUDENT_ME_API = "https://api-new.testbook.com/api/v2.2/students/me";
 
 export const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxZYAtoN5XuHCgzBVEJnnWe10Dl5KPWReowxOfiS-XbZR1MMAa0DMmlvAOqt0XMfDo0fw/exec";
+  "https://script.google.com/macros/s/AKfycbzLoePdQM4sQKzJy4of6ssKMVlwYBxad4z8w0yAqZVUBh-B7d4lkfLM_Ah6uicNP2y5/exec";
 
 const APPS_SCRIPT_TOKEN = "TB_UGC_SECRET_2025";
 
@@ -76,7 +76,22 @@ export async function fireEvent(
   } catch { /* non-blocking — never throw */ }
 }
 
-/* ── LMS auth ────────────────────────────────────────────── */
+/* ── LMS auth (with server-side token cache) ─────────────── */
+
+// Cache the admin token for 20 min so we don't call lmsLogin() on every request.
+const _tokenCache: { token: string; expiresAt: number } | Record<string, never> = {};
+const TOKEN_TTL_MS = 20 * 60 * 1000;
+
+export async function lmsGetAdminToken(): Promise<string> {
+  const cache = _tokenCache as { token?: string; expiresAt?: number };
+  if (cache.token && cache.expiresAt && cache.expiresAt > Date.now()) {
+    return cache.token;
+  }
+  const token = await lmsLogin();
+  cache.token = token;
+  cache.expiresAt = Date.now() + TOKEN_TTL_MS;
+  return token;
+}
 
 export async function lmsLogin(): Promise<string> {
   const resp = await fetch(LOGIN_URL, {
@@ -293,7 +308,7 @@ export async function lmsGetStudentVpa(authCode: string): Promise<string | null>
 }
 
 export async function lmsGetStudentProfileByPhone(phone: string): Promise<LmsStudentProfile> {
-  const token = await lmsLogin();
+  const token = await lmsGetAdminToken();
   const student = await lmsFindStudentByMobile(token, phone);
   if (!student) return { studentId: null, mobile: toLmsMobile(phone), name: null, vpa: null };
 
