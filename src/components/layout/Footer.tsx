@@ -6,19 +6,19 @@ export function Footer() {
     <footer className="bg-[#07103a] text-white">
       {/* Top CTA strip */}
       <div className="border-b border-white/8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div>
-            <div className="text-lg font-bold">Ready to start earning?</div>
+            <div className="text-base sm:text-lg font-bold">Ready to start earning?</div>
             <div className="text-sm text-white/60 mt-0.5">Send your first video to Testbook. Approval in 24 hours.</div>
           </div>
-          <Link to="/submit" className="btn-orange shrink-0">
+          <Link to="/submit" className="btn-orange shrink-0 w-full sm:w-auto justify-center">
             Send your video <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>
 
       {/* Main columns */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12 grid gap-6 sm:gap-8 sm:grid-cols-2 md:grid-cols-4">
         {/* Brand */}
         <div className="sm:col-span-2 md:col-span-1">
           <div className="flex items-center gap-2.5">

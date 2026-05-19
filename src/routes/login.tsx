@@ -292,7 +292,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex">
+    <div className="min-h-[calc(100dvh-56px)] flex">
       {/* ── Left brand panel (desktop only) ── */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] tb-gradient relative overflow-hidden flex-col justify-between p-12">
         {/* Background layers */}
@@ -412,7 +412,7 @@ function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-10 bg-gradient-to-b from-blue-50/60 to-white relative overflow-hidden">
+      <div className="flex-1 flex items-start sm:items-center justify-center px-4 sm:px-8 py-6 sm:py-10 bg-gradient-to-b from-blue-50/60 to-white relative overflow-hidden">
         {/* Subtle background orbs */}
         <div className="absolute -top-20 -right-20 size-64 rounded-full bg-blue-100/60 blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 -left-10 size-48 rounded-full bg-indigo-100/40 blur-2xl pointer-events-none" />
@@ -569,7 +569,7 @@ function LoginPage() {
                     <label className="text-sm font-semibold text-tb-navy block mb-3">
                       Enter 6-digit OTP
                     </label>
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex gap-1.5 sm:gap-2 justify-center">
                       {otp.map((d, i) => (
                         <input
                           key={i}
@@ -583,14 +583,13 @@ function LoginPage() {
                           onKeyDown={(e) => handleKeyDown(e, i)}
                           onPaste={i === 0 ? handlePaste : undefined}
                           className={`
-                            w-11 h-13 sm:w-12 text-center text-xl font-black rounded-xl border-2 outline-none
+                            w-10 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-black rounded-xl border-2 outline-none
                             transition-all duration-150 bg-blue-50/40
                             ${d
                               ? "border-tb-blue bg-blue-50 text-tb-navy scale-105 shadow-sm shadow-blue-200"
                               : "border-border text-tb-navy focus:border-tb-blue focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                             }
                           `}
-                          style={{ height: "52px" }}
                         />
                       ))}
                     </div>

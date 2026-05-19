@@ -81,36 +81,36 @@ function HomePage() {
       <section className="relative tb-gradient text-white overflow-hidden">
         <div className="absolute inset-0 dot-grid opacity-30" />
         <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,white_0,transparent_40%),radial-gradient(circle_at_80%_60%,#60a5fa_0,transparent_40%)]" />
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-20 md:pt-20 md:pb-28 grid lg:grid-cols-12 gap-10 items-center">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 pt-10 pb-14 md:pt-20 md:pb-28 grid lg:grid-cols-12 gap-6 lg:gap-10 items-center">
           <div className="lg:col-span-7 fade-up">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tb-text-gradient">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] tb-text-gradient">
               Create the video.<br />Send it to Testbook.<br />We publish and pay.
             </h1>
-            <p className="mt-5 text-base md:text-lg text-white/85 max-w-xl leading-relaxed">
+            <p className="mt-4 text-sm sm:text-base md:text-lg text-white/85 max-w-xl leading-relaxed">
               Join <strong className="text-white">12,000+ student creators</strong> making publish-ready videos for Testbook Pass. Upload the file to us, we publish approved videos, and payouts go directly to your UPI account.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/submit" className="btn-orange text-base px-6 py-3.5">
+            <div className="mt-6 flex flex-col xs:flex-row flex-wrap gap-3">
+              <Link to="/submit" className="btn-orange text-base px-6 py-3.5 justify-center">
                 Send your video <ArrowRight className="size-4" />
               </Link>
-              <Link to="/how-to" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/18 hover:text-white text-base px-6 py-3.5">
+              <Link to="/how-to" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/18 hover:text-white text-base px-6 py-3.5 justify-center">
                 How To
               </Link>
             </div>
 
             {/* Stats */}
-            <div className="mt-9 grid grid-cols-3 gap-3 max-w-md">
+            <div className="mt-7 grid grid-cols-3 gap-2 sm:gap-3 max-w-md">
               {[
                 { Icon: Users,        k: "12K+",  v: "Creators onboarded" },
                 { Icon: IndianRupee,  k: "₹4.2Cr",v: "Paid out in 2025" },
                 { Icon: Trophy,       k: "85%",   v: "Approval rate" },
               ].map(({ Icon, k, v }) => (
-                <div key={k} className="glass p-4 flex flex-col gap-2 hover:bg-white/12 transition-colors">
-                  <div className="size-8 rounded-lg bg-white/10 flex items-center justify-center">
-                    <Icon className="size-4 text-tb-blue-light" />
+                <div key={k} className="glass p-3 sm:p-4 flex flex-col gap-1.5 hover:bg-white/12 transition-colors">
+                  <div className="size-7 sm:size-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <Icon className="size-3.5 sm:size-4 text-tb-blue-light" />
                   </div>
-                  <div className="text-2xl font-black">{k}</div>
-                  <div className="text-xs text-white/70 leading-snug">{v}</div>
+                  <div className="text-lg sm:text-2xl font-black">{k}</div>
+                  <div className="text-[10px] sm:text-xs text-white/70 leading-snug">{v}</div>
                 </div>
               ))}
             </div>
@@ -142,13 +142,13 @@ function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-16 md:py-20">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10 md:py-20">
         <div className="text-center max-w-2xl mx-auto">
           <span className="badge text-xs"><CheckCircle2 className="size-3.5" /> How it works</span>
-          <h2 className="mt-4 text-3xl md:text-4xl font-bold text-tb-navy">5 steps from idea to UPI</h2>
-          <p className="mt-3 text-base text-muted-foreground">You create the video. You give it to us. Testbook publishes approved videos.</p>
+          <h2 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-bold text-tb-navy">5 steps from idea to UPI</h2>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">You create the video. You give it to us. Testbook publishes approved videos.</p>
         </div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {steps.map((s, i) => (
             <div key={s.title} className="card p-5 fade-up hover:-translate-y-1 hover:shadow-lg transition-all duration-200" style={{ animationDelay: `${i * 70}ms` }}>
               <div className="flex items-center justify-between">
@@ -167,7 +167,7 @@ function HomePage() {
 
       {/* ── CONTENT GUIDE ── */}
       <section className="bg-white border-y border-border">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-16 md:py-20 grid md:grid-cols-2 gap-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10 md:py-20 grid md:grid-cols-2 gap-4 md:gap-6">
           <div className="card p-6">
             <span className="badge badge-green text-xs">What works</span>
             <h2 className="mt-4 text-2xl font-bold text-tb-navy">Content that gets approved</h2>
@@ -198,11 +198,11 @@ function HomePage() {
       </section>
 
       {/* ── PAYOUT TIERS ── */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-16 md:py-20">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-10 md:py-20">
         <div className="text-center max-w-2xl mx-auto">
           <span className="badge badge-orange text-xs"><IndianRupee className="size-3.5" /> Payout tiers</span>
-          <h2 className="mt-4 text-3xl md:text-4xl font-bold text-tb-navy">Cross a milestone, get paid</h2>
-          <p className="mt-3 text-base text-muted-foreground">Payouts are cumulative — every milestone you cross adds to the next payout.</p>
+          <h2 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-bold text-tb-navy">Cross a milestone, get paid</h2>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">Payouts are cumulative — every milestone you cross adds to the next payout.</p>
         </div>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {tiers.map((t, i) => {
@@ -257,11 +257,11 @@ function HomePage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="mx-auto max-w-3xl px-4 sm:px-6 py-16 md:py-20">
+      <section className="mx-auto max-w-3xl px-4 sm:px-6 py-10 md:py-20">
         <div className="text-center">
           <span className="badge text-xs">FAQ</span>
-          <h2 className="mt-4 text-3xl font-bold text-tb-navy">Questions, answered</h2>
-          <p className="mt-3 text-base text-muted-foreground">Everything you need to know before you hit record.</p>
+          <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-tb-navy">Questions, answered</h2>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">Everything you need to know before you hit record.</p>
         </div>
         <div className="mt-8 space-y-3">
           {faqs.map((f, i) => {
@@ -280,24 +280,24 @@ function HomePage() {
       </section>
 
       {/* ── BOTTOM CTA ── */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
-        <div className="card p-8 md:p-14 tb-gradient text-white text-center relative overflow-hidden">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-10 md:pb-16">
+        <div className="card p-6 sm:p-8 md:p-14 tb-gradient text-white text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_30%_50%,#60a5fa_0,transparent_40%),radial-gradient(circle_at_70%_50%,#f97316_0,transparent_45%)]" />
           <div className="relative">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Clock className="size-5 text-white/70" />
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Clock className="size-4 text-white/70" />
               <span className="text-white/70 text-sm font-medium">Send in under 5 minutes</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold tb-text-gradient">Your phone is your studio.</h2>
-            <p className="mt-4 text-white/80 max-w-xl mx-auto text-base leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-bold tb-text-gradient">Your phone is your studio.</h2>
+            <p className="mt-3 text-white/80 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
               Record a 30–60 second video today, upload it to Testbook, and let our team publish approved videos for milestone payouts.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3 justify-center">
-              <Link to="/submit" className="btn-orange text-base px-8 py-3.5">Send your video <ArrowRight className="size-4" /></Link>
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <Link to="/submit" className="btn-orange text-base px-8 py-3.5 w-full sm:w-auto justify-center">Send your video <ArrowRight className="size-4" /></Link>
               {user ? (
-                <Link to="/dashboard" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">View dashboard</Link>
+                <Link to="/dashboard" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5 w-full sm:w-auto justify-center">View dashboard</Link>
               ) : (
-                <Link to="/login" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5">Login first</Link>
+                <Link to="/login" className="btn-ghost bg-white/10 border-white/25 text-white hover:bg-white/20 hover:text-white text-base px-8 py-3.5 w-full sm:w-auto justify-center">Login first</Link>
               )}
             </div>
           </div>

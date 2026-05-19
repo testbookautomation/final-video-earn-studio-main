@@ -76,23 +76,41 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { overflow-x: hidden; }
+  * { border-color: var(--color-border); box-sizing: border-box; }
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    /* Use dynamic viewport height so mobile browser chrome is accounted for */
+    height: 100%;
+  }
   body {
+    overflow-x: hidden;
     background-color: var(--tb-bg);
     color: var(--color-foreground);
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-size: 1rem;
     line-height: 1.6;
+    /* Prevent text inflation on mobile */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
-  /* Prevent iOS tap flash and remove 300 ms tap delay on interactive elements */
+  /* Prevent iOS tap flash and remove 300 ms tap delay */
   button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  /* Ensure tap targets are at least 44px for accessibility */
+  button, [role="button"] { min-height: 44px; }
   /* Prevent iOS Safari from zooming on input focus (requires font-size >= 16px) */
   input, select, textarea { font-size: 16px; }
-  /* On iPhone X+ bump bottom clearance to include home-indicator height */
+  /* Images never overflow their container */
+  img, video { max-width: 100%; height: auto; }
+  /* On mobile bump bottom clearance to include home-indicator + bottom nav */
   @media (max-width: 767px) {
     main { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
+  }
+  /* Landscape mode: reduce vertical padding so content fits */
+  @media (max-height: 500px) and (orientation: landscape) {
+    main { padding-bottom: env(safe-area-inset-bottom, 0px); }
   }
 }
 

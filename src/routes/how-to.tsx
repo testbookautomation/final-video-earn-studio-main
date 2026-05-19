@@ -82,25 +82,25 @@ function SOPPage() {
   return (
     <>
       <section className="tb-gradient text-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-14 md:py-20 fade-up">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-10 md:py-20 fade-up">
+          <div className="flex items-center gap-3 mb-3">
             <img
               src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
               alt="Testbook"
-              className="h-7 w-auto opacity-90"
+              className="h-6 sm:h-7 w-auto opacity-90"
             />
           </div>
           <span className="badge bg-white/10 text-white border-white/20"><Lightbulb className="size-3.5" /> How To</span>
-          <h1 className="mt-3 text-3xl md:text-5xl font-bold tb-text-gradient">The 60-second formula that gets approved</h1>
-          <p className="mt-4 max-w-2xl text-white/80">Read this once, record the video, and upload the final file to Testbook. We approve ~85% of submissions on the first try when creators follow this.</p>
+          <h1 className="mt-3 text-2xl sm:text-3xl md:text-5xl font-bold tb-text-gradient">The 60-second formula that gets approved</h1>
+          <p className="mt-3 max-w-2xl text-sm sm:text-base text-white/80 leading-relaxed">Read this once, record the video, and upload the final file to Testbook. We approve ~85% of submissions on the first try when creators follow this.</p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 sm:px-6 py-12 md:py-16 space-y-12">
+      <section className="mx-auto max-w-5xl px-4 sm:px-6 py-8 md:py-16 space-y-8 md:space-y-12">
         {/* Steps */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><Video className="size-5 text-tb-blue" /> Your 4-beat script</h2>
-          <div className="mt-5 grid sm:grid-cols-2 gap-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-tb-navy flex items-center gap-2"><Video className="size-5 text-tb-blue" /> Your 4-beat script</h2>
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
             {sopSteps.map((s, i) => (
               <div key={s.title} className="card p-5">
                 <div className="size-9 rounded-full bg-blue-50 text-tb-blue flex items-center justify-center font-bold text-sm">{i + 1}</div>

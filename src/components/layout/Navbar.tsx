@@ -47,8 +47,8 @@ export function Navbar() {
   const userLabel = user?.name?.trim() || (user?.phone ? `+91 ${user.phone.slice(-4)}` : "");
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-border shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 border-b border-border shadow-sm" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5 group">
           <img
             src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png"
