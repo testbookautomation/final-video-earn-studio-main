@@ -59,22 +59,22 @@ const demoVideos = [
   {
     title: "UP Police Constable Mock",
     note: "Notice the quick hook, simple language, and clear Testbook Pass mention.",
-    src: "https://cdn.testbook.com/1779227085899-UP%20Police%20Constable%20Mock%20%23testbook%20%23mocktest%20%23uppolice%20%23uppoliceconstable%20%23exam%20%23rojgarwithankit.mp4/1779227087.mp4",
+    src: "https://cdn.testbook.com/1779260919569-YTDown_Shorts_UP-Police-Constable-Mock-testbook-mockte_Media_9C2JsNBeEt4_002_720p.mp4/1779260920.mp4",
   },
   {
     title: "UP Police New Full Mock Test",
     note: "Use this as a reference for pacing, framing, and keeping the message tight.",
-    src: "https://cdn.testbook.com/1779227085900-UPPOLICE%F0%9F%9A%A8New%20Full%20MockTest-07%20Testbook%F0%9F%93%9D%23uppolice%20%23uppoliceexam%20%23testbookmock%20%23testbook%20%23upsi%20%23upp.mp4/1779227087.mp4",
+    src: "https://cdn.testbook.com/1779260919569-YTDown_Shorts_UPPOLICE-New-Full-MockTest-07-Testbook-u_Media_uMnwR4o7kXU_002_720p.mp4/1779260920.mp4",
   },
   {
     title: "SSC CGL Pre Mock",
     note: "A good example of making the topic exam-specific while staying easy to watch.",
-    src: "https://cdn.testbook.com/1779227085900-testbook%20CGL%20pre%20mock-1%20with%20sectional%20timing%23ssccgl%23ssccgl2026%23cgl2026%23chsl2026%23motivation%23shorts.mp4/1779227087.mp4",
+    src: "https://cdn.testbook.com/1779260919569-YTDown_Shorts_testbook-CGL-pre-mock-1-with-sectional-t_Media_wkfiuQQuhQQ_002_720p.mp4/1779260920.mp4",
   },
   {
     title: "UPP Constable Sipahi Shukravar",
     note: "Strong structure with a clear call to action — great format to follow.",
-    src: "https://cdn.testbook.com/1779227085900-UPP%20CONSTABLE%20MOCK%20TEST%20SIPAHI%20SHUKRAVAR%2015%20MAY%E2%9C%85%20%23uppolice%20%23upp%20%23testbook%20%23uppmocktest%20%23motivation.mp4/1779227087.mp4",
+    src: "https://cdn.testbook.com/1779260919569-YTDown_Shorts_UPP-CONSTABLE-MOCK-TEST-SIPAHI-SHUKRAVAR_Media_PFNBeMc6OjU_001_720p.mp4/1779260920.mp4",
   },
 ];
 
