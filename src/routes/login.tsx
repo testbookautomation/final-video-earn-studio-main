@@ -12,6 +12,7 @@ import {
   Lock,
   Sparkles,
   Star,
+  ChevronLeft
 } from "lucide-react";
 import {
   getOrCreateUserSession,
@@ -292,119 +293,118 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-56px)] flex">
+    <div className="min-h-[calc(100dvh-56px)] flex bg-tb-bg">
+      
       {/* ── Left brand panel (desktop only) ── */}
-      <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] tb-gradient relative overflow-hidden flex-col justify-between p-12">
+      <div className="hidden lg:flex lg:w-[46%] xl:w-[50%] tb-gradient relative overflow-hidden flex-col justify-between p-12">
         {/* Background layers */}
-        <div className="absolute inset-0 dot-grid opacity-20" />
-        <div className="absolute -top-32 -left-32 size-96 rounded-full bg-blue-400/25 blur-3xl" />
-        <div className="absolute top-1/2 -right-20 size-72 rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-violet-600/15 blur-3xl" />
-        {/* Diagonal shimmer stripe */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 dot-grid opacity-25" />
+        <div className="absolute -top-32 -left-32 size-96 rounded-full bg-blue-500/25 blur-[100px]" />
+        <div className="absolute top-1/2 -right-20 size-80 rounded-full bg-indigo-500/20 blur-[100px]" />
+        <div className="absolute bottom-0 left-1/4 size-80 rounded-full bg-violet-600/15 blur-[100px]" />
 
         {/* ── Top: logo + live badge ── */}
         <div className="relative flex items-start justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             <img
               src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
               alt="Testbook"
-              className="h-8 w-auto"
+              className="h-7 w-auto"
             />
-            <div className="mt-1 text-[11px] font-bold uppercase tracking-widest text-white/40">
+            <div className="h-4 w-px bg-white/30" />
+            <div className="text-[10px] font-black uppercase tracking-widest text-white/70 bg-white/10 px-2 py-0.5 rounded">
               Creators Lab
             </div>
           </div>
           {/* Live badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md">
             <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-semibold text-white/80 tracking-wide">LIVE PROGRAM</span>
+            <span className="text-[10px] font-bold text-white tracking-wider">LIVE CAMPAIGN</span>
           </div>
         </div>
 
         {/* ── Middle: headline + perks + stats ── */}
-        <div className="relative space-y-7">
+        <div className="relative space-y-8 my-auto">
           {/* Announcement pill */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-white/80 font-medium backdrop-blur-sm w-fit">
-            <Sparkles className="size-3.5 text-yellow-300" />
-            ₹4.2 Crore paid out to creators so far
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-white/90 font-bold backdrop-blur-md w-fit">
+            <Sparkles className="size-3.5 text-yellow-300 animate-pulse" />
+            ₹4.2 Crore paid out to student creators
           </div>
 
-          <div>
+          <div className="space-y-4">
             <h2 className="text-4xl xl:text-[2.75rem] font-black text-white leading-[1.15] tracking-tight">
               Create the video.
               <br />
               Send it to Testbook.
               <br />
               <span className="relative inline-block">
-                <span className="tb-text-gradient">Get paid in UPI.</span>
+                <span className="tb-text-gradient bg-gradient-to-r from-white to-blue-200">Get paid in UPI.</span>
                 {/* underline accent */}
-                <span className="absolute -bottom-1 left-0 h-0.5 w-full rounded-full bg-gradient-to-r from-blue-300/60 to-transparent" />
+                <span className="absolute -bottom-1.5 left-0 h-0.75 w-full rounded-full bg-gradient-to-r from-blue-400 to-transparent" />
               </span>
             </h2>
-            <p className="mt-5 text-white/65 text-sm max-w-sm leading-relaxed">
-              Upload your finished file to Creators Lab — Testbook publishes approved videos and pays you when milestones are hit.
+            <p className="text-white/70 text-sm xl:text-base max-w-md leading-relaxed">
+              Upload your vertical video to Creators Lab. Approved submissions are published by Testbook, and milestone payouts go straight to your UPI.
             </p>
           </div>
 
           {/* Perks as pills */}
-          <div className="space-y-2.5">
+          <div className="space-y-3 max-w-md">
             {perks.map((p, i) => (
               <div
                 key={p}
-                className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/8 border border-white/10 backdrop-blur-sm"
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-md hover:bg-white/15 transition-all"
               >
                 <div className="size-5 rounded-full bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
                   <span className="text-[10px] font-black text-emerald-300">{i + 1}</span>
                 </div>
-                <span className="text-sm text-white/85 font-medium">{p}</span>
+                <span className="text-xs xl:text-sm text-white/90 font-semibold">{p}</span>
               </div>
             ))}
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-3 max-w-md">
             {stats.map(({ Icon, k, v }) => (
               <div
                 key={k}
-                className="rounded-2xl border border-white/15 bg-white/8 backdrop-blur-sm p-4 text-center hover:bg-white/12 transition-colors"
+                className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md p-4 text-center hover:bg-white/15 transition-all"
               >
                 <div className="size-8 rounded-xl bg-white/10 flex items-center justify-center mx-auto mb-2">
-                  <Icon className="size-4 text-blue-200" />
+                  <Icon className="size-4 text-white" />
                 </div>
-                <div className="text-xl font-black text-white">{k}</div>
-                <div className="text-[10px] text-white/50 mt-0.5 uppercase tracking-wide">{v}</div>
+                <div className="text-lg xl:text-xl font-black text-white">{k}</div>
+                <div className="text-[10px] text-white/50 mt-0.5 uppercase tracking-widest font-bold">{v}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* ── Bottom: testimonial card ── */}
-        <div className="relative">
-          {/* Stars row */}
+        <div className="relative max-w-md">
           <div className="flex items-center gap-0.5 mb-2 ml-1">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="size-3.5 fill-yellow-400 text-yellow-400" />
             ))}
-            <span className="ml-1.5 text-[11px] text-white/50 font-medium">Creator review</span>
+            <span className="ml-1.5 text-[10px] text-white/50 font-bold uppercase tracking-wider">Creator Review</span>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/8 backdrop-blur-md p-4">
-            <p className="text-sm text-white/85 italic leading-relaxed">
-              "Uploaded my first video on a Monday. Testbook approved it by Wednesday and UPI hit on Friday."
+          <div className="rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md p-4">
+            <p className="text-xs xl:text-sm text-white/90 italic leading-relaxed">
+              "Uploaded my first video on a Monday. Testbook approved it by Wednesday and UPI hit my account by Friday. Highly recommend!"
             </p>
             <div className="mt-3.5 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="size-9 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-black text-sm shadow-lg">
+                <div className="size-9 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white font-black text-sm shadow-md">
                   P
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-white leading-tight">Priya S.</div>
-                  <div className="text-[11px] text-white/50">SSC CGL aspirant</div>
+                  <div className="text-xs xl:text-sm font-bold text-white leading-tight">Priya S.</div>
+                  <div className="text-[10px] text-white/50 mt-0.5">SSC CGL Aspirant</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm font-black text-emerald-300">₹18,400</div>
-                <div className="text-[10px] text-white/40">6.2L views</div>
+                <div className="text-sm font-black text-emerald-400">₹18,400</div>
+                <div className="text-[10px] text-white/40">Total earned</div>
               </div>
             </div>
           </div>
@@ -412,31 +412,34 @@ function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-start sm:items-center justify-center px-4 sm:px-8 py-6 sm:py-10 bg-gradient-to-b from-blue-50/60 to-white relative overflow-hidden">
-        {/* Subtle background orbs */}
-        <div className="absolute -top-20 -right-20 size-64 rounded-full bg-blue-100/60 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 -left-10 size-48 rounded-full bg-indigo-100/40 blur-2xl pointer-events-none" />
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8 sm:py-14 bg-gradient-to-b from-blue-50/20 to-white relative overflow-hidden">
+        {/* Decorative background orbs */}
+        <div className="absolute -top-20 -right-20 size-64 rounded-full bg-blue-100/40 blur-[80px] pointer-events-none" />
+        <div className="absolute bottom-10 -left-10 size-48 rounded-full bg-indigo-100/30 blur-[60px] pointer-events-none" />
 
-        <div className="w-full max-w-sm fade-up relative">
+        <div className="w-full max-w-sm fade-up relative space-y-6">
 
-          {/* Mobile hero (hidden on desktop) */}
-          <div className="lg:hidden mb-8">
-            <div className="tb-gradient rounded-2xl p-5 text-white text-center relative overflow-hidden">
-              <div className="absolute inset-0 dot-grid opacity-20" />
-              <div className="relative">
-                <img
-                  src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
-                  alt="Testbook"
-                  className="h-6 w-auto mx-auto mb-3 opacity-90"
-                />
-                <p className="text-sm font-semibold text-white/90 leading-relaxed">
-                  Share your story. Earn up to <span className="text-yellow-300 font-black">₹1,000</span> via UPI.
+          {/* Mobile Hero View (compact, hidden on desktop) */}
+          <div className="lg:hidden">
+            <div className="tb-gradient rounded-3xl p-5 text-white text-center relative overflow-hidden shadow-lg shadow-blue-900/10">
+              <div className="absolute inset-0 dot-grid opacity-20 pointer-events-none" />
+              <div className="relative space-y-3.5">
+                <div className="flex items-center justify-center gap-2">
+                  <img
+                    src="https://cdn.testbook.com/1761306364299-testbook-white.png/1761306366.png"
+                    alt="Testbook"
+                    className="h-5.5 w-auto"
+                  />
+                  <span className="text-[10px] font-black tracking-widest text-white/80 bg-white/10 px-1.5 py-0.5 rounded">Creators Lab</span>
+                </div>
+                <p className="text-xs sm:text-sm font-semibold text-white/90 leading-relaxed">
+                  Share your story. Earn up to <span className="text-yellow-300 font-extrabold">₹1,000</span> via UPI.
                 </p>
-                <div className="flex justify-center gap-4 mt-3">
+                <div className="flex justify-center gap-6 mt-1 border-t border-white/10 pt-2 max-w-xs mx-auto">
                   {stats.map(({ k, v }) => (
                     <div key={k} className="text-center">
-                      <div className="text-base font-black">{k}</div>
-                      <div className="text-[10px] text-white/60">{v}</div>
+                      <div className="text-sm font-black">{k}</div>
+                      <div className="text-[9px] text-white/50 font-bold uppercase tracking-wider">{v}</div>
                     </div>
                   ))}
                 </div>
@@ -445,74 +448,75 @@ function LoginPage() {
           </div>
 
           {/* Trust badge */}
-          <div className="flex items-center justify-center gap-1.5 mb-5">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-border shadow-sm text-[11px] text-muted-foreground font-medium">
-              <Lock className="size-3 text-emerald-500" />
-              OTP verified · Secure login
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border/80" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-border/80 shadow-sm text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
+              <Lock className="size-3.5 text-emerald-500" />
+              OTP VERIFIED · SECURE
             </div>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border/80" />
           </div>
 
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-6">
-            <StepDot
-              n={1}
-              active={step === "phone"}
-              done={step === "otp"}
-              label="Phone"
-            />
-            <div className="flex-1 h-0.5 rounded-full overflow-hidden bg-border">
-              <div
-                className="h-full tb-gradient transition-all duration-500"
-                style={{ width: step === "otp" ? "100%" : "0%" }}
-              />
+          {/* Steps visual wizard indicator */}
+          <div className="flex items-center justify-center gap-3 bg-secondary/30 p-2 rounded-2xl border border-border/40">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 ${
+              step === "phone" ? "bg-white text-tb-navy font-bold shadow-sm scale-105" : "text-muted-foreground opacity-60"
+            }`}>
+              <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                step === "phone" ? "tb-gradient text-white" : "bg-muted text-muted-foreground"
+              }`}>1</span>
+              <span className="text-xs font-bold tracking-tight">Phone Number</span>
             </div>
-            <StepDot
-              n={2}
-              active={step === "otp"}
-              done={false}
-              label="Verify"
-            />
+            
+            <ArrowRight className="size-3.5 text-muted-foreground/60 shrink-0" />
+            
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 ${
+              step === "otp" ? "bg-white text-tb-navy font-bold shadow-sm scale-105" : "text-muted-foreground opacity-60"
+            }`}>
+              <span className={`size-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                step === "otp" ? "tb-gradient text-white animate-bounce" : "bg-muted text-muted-foreground"
+              }`}>2</span>
+              <span className="text-xs font-bold tracking-tight">OTP Code</span>
+            </div>
           </div>
 
           {/* Heading */}
-          <div className="mb-5">
-            <h1 className="text-2xl font-black text-tb-navy flex items-center gap-2">
+          <div className="space-y-1.5 text-center sm:text-left">
+            <h1 className="text-2xl font-black text-tb-navy flex items-center justify-center sm:justify-start gap-2">
               {step === "phone" ? (
-                <><Phone className="size-5 text-tb-blue" /> Enter your number</>
+                <><Phone className="size-5.5 text-tb-blue" /> Login with Phone</>
               ) : (
-                <><ShieldCheck className="size-5 text-emerald-500" /> Verify your number</>
+                <><ShieldCheck className="size-5.5 text-emerald-500 animate-bounce" /> Verify OTP</>
               )}
             </h1>
-            <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {step === "phone" ? (
-                "We'll send a 6-digit OTP to your mobile number to confirm your identity."
+                "Enter your mobile number. We will send a secure 6-digit OTP to verify your account."
               ) : (
                 <>
                   OTP sent to{" "}
-                  <span className="font-bold text-tb-navy">+91 {phone}</span>.
+                  <span className="font-extrabold text-tb-navy">+91 {phone}</span>.
                   Enter it below to continue.
                 </>
               )}
             </p>
           </div>
 
-          {/* Card */}
-          <div className="rounded-2xl border border-border bg-white shadow-xl shadow-blue-900/5 overflow-hidden">
-            {/* Gradient top accent */}
-            <div className="h-1 w-full tb-gradient" />
+          {/* Login Card */}
+          <div className="card overflow-hidden bg-white border-border/70 shadow-xl shadow-slate-900/5 relative">
+            {/* Top gradient highlight strip */}
+            <div className="h-1 w-full bg-gradient-to-r from-tb-navy via-tb-blue to-tb-orange" />
 
             <div className="p-6">
               {step === "phone" ? (
                 <form onSubmit={sendOtp} className="space-y-4">
-                  <div>
-                    <label className="text-sm font-semibold text-tb-navy block mb-1.5">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-tb-navy block uppercase tracking-wider">
                       Mobile number
                     </label>
-                    <div className="flex items-stretch rounded-xl border border-border bg-white overflow-hidden focus-within:border-tb-blue focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                      <span className="px-3 flex items-center gap-1.5 text-sm font-semibold text-tb-navy border-r border-border bg-blue-50/60 shrink-0">
-                        <span className="text-base">🇮🇳</span> +91
+                    <div className="flex items-stretch rounded-xl border-2 border-border focus-within:border-tb-blue focus-within:ring-4 focus-within:ring-blue-500/5 transition-all duration-200 bg-white overflow-hidden">
+                      <span className="px-3.5 flex items-center gap-1.5 text-sm font-extrabold text-tb-navy border-r border-border bg-slate-50/50 shrink-0 select-none">
+                        <span>🇮🇳</span> +91
                       </span>
                       <input
                         type="tel"
@@ -525,51 +529,50 @@ function LoginPage() {
                           setPhone(e.target.value.replace(/\D/g, ""));
                           setError(null);
                         }}
-                        className="flex-1 px-3 py-3.5 bg-transparent outline-none text-base font-medium tracking-widest"
+                        className="flex-1 px-3.5 py-4 bg-transparent outline-none text-base font-bold tracking-widest text-tb-navy"
                       />
                       {validPhone && (
-                        <span className="pr-3 flex items-center">
-                          <CheckCircle2 className="size-4 text-emerald-500" />
+                        <span className="pr-3.5 flex items-center shrink-0">
+                          <CheckCircle2 className="size-5 text-emerald-500" />
                         </span>
                       )}
                     </div>
                     {error && (
-                      <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
-                        <span className="size-3 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">!</span>
-                        {error}
+                      <p className="text-xs text-red-600 flex items-center gap-1.5 pt-1 animate-fade-up">
+                        <span className="size-3.5 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">!</span>
+                        <span className="font-semibold">{error}</span>
                       </p>
                     )}
                   </div>
 
                   <button
                     disabled={!validPhone || busy}
-                    className="btn-primary w-full text-base py-3.5 group"
+                    className="btn-primary w-full text-base py-4 group shadow-md shadow-blue-500/10 active:scale-95"
                   >
                     {loading === "send" ? (
                       <>
-                        <span className="spinner" /> Sending…
+                        <span className="spinner" /> Sending OTP…
                       </>
                     ) : (
                       <>
-                        Send OTP
-                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                        Send Verification OTP
+                        <ArrowRight className="size-4.5 transition-transform group-hover:translate-x-0.5" />
                       </>
                     )}
                   </button>
 
-                  <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
-                    By continuing you agree to our campaign terms &amp; content
-                    policy.
+                  <p className="text-[10px] text-muted-foreground text-center leading-relaxed font-semibold">
+                    By logging in you agree to our campaign guidelines, content requirements, and payout terms.
                   </p>
                 </form>
               ) : (
                 <form onSubmit={verify} className="space-y-5">
-                  {/* OTP boxes */}
-                  <div>
-                    <label className="text-sm font-semibold text-tb-navy block mb-3">
+                  {/* OTP boxes grid */}
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold text-tb-navy block uppercase tracking-wider text-center sm:text-left">
                       Enter 6-digit OTP
                     </label>
-                    <div className="flex gap-1.5 sm:gap-2 justify-center">
+                    <div className="flex gap-2 justify-center">
                       {otp.map((d, i) => (
                         <input
                           key={i}
@@ -583,66 +586,67 @@ function LoginPage() {
                           onKeyDown={(e) => handleKeyDown(e, i)}
                           onPaste={i === 0 ? handlePaste : undefined}
                           className={`
-                            w-10 h-12 sm:w-12 sm:h-13 text-center text-lg sm:text-xl font-black rounded-xl border-2 outline-none
-                            transition-all duration-150 bg-blue-50/40
+                            w-10 h-13 sm:w-11 sm:h-14 text-center text-lg sm:text-xl font-black rounded-xl border-2 outline-none
+                            transition-all duration-300 scale-bounce
                             ${d
-                              ? "border-tb-blue bg-blue-50 text-tb-navy scale-105 shadow-sm shadow-blue-200"
-                              : "border-border text-tb-navy focus:border-tb-blue focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                              ? "border-tb-blue bg-blue-50/50 text-tb-navy scale-105 shadow-md shadow-blue-200/50 ring-2 ring-tb-blue/10 glow-blue"
+                              : "border-border text-tb-navy bg-white focus:border-tb-blue focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:scale-110 focus:shadow-lg focus:shadow-blue-500/20 glow-blue"
                             }
                           `}
                         />
                       ))}
                     </div>
                     {error && (
-                      <p className="mt-3 text-xs text-red-600 text-center flex items-center justify-center gap-1">
-                        <span className="size-3 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-bold shrink-0">!</span>
-                        {error}
+                      <p className="text-xs text-red-600 text-center flex items-center justify-center gap-1.5 pt-1 animate-fade-up">
+                        <span className="size-3.5 rounded-full bg-red-500 text-white flex items-center justify-center text-[9px] font-black shrink-0">!</span>
+                        <span className="font-semibold">{error}</span>
                       </p>
                     )}
                   </div>
 
-                  {/* OTP hint */}
-                  <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-800">
-                    <ShieldCheck className="size-4 mt-0.5 shrink-0 text-emerald-600" />
-                    <p className="text-xs leading-relaxed">
-                      Enter the 6-digit OTP sent to <span className="font-bold">+91 {phone}</span>. Valid for 10 minutes.
+                  {/* Dynamic Alert description box */}
+                  <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-800">
+                    <ShieldCheck className="size-4.5 mt-0.5 shrink-0 text-emerald-600 animate-pulse" />
+                    <p className="text-xs leading-relaxed font-semibold">
+                      OTP is valid for 10 minutes. Check your messages for the secure login code.
                     </p>
                   </div>
 
                   <button
                     disabled={!otpFilled || busy}
-                    className="btn-primary w-full text-base py-3.5 group"
+                    className="btn-primary w-full text-base py-4 group shadow-md shadow-blue-500/10 active:scale-95"
                   >
                     {loading === "verify" ? (
                       <>
-                        <span className="spinner" /> Verifying…
+                        <span className="spinner" /> Verifying OTP…
                       </>
                     ) : (
                       <>
-                        Verify &amp; continue
-                        <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                        Verify &amp; Enter Dashboard
+                        <ArrowRight className="size-4.5 transition-transform group-hover:translate-x-0.5" />
                       </>
                     )}
                   </button>
 
-                  <div className="flex items-center justify-between text-xs">
+                  {/* Actions footer row */}
+                  <div className="flex items-center justify-between text-xs pt-1">
                     <button
                       type="button"
                       onClick={goBack}
-                      className="text-muted-foreground hover:text-tb-navy transition-colors font-medium"
+                      className="text-muted-foreground hover:text-tb-navy transition-colors font-bold flex items-center gap-1"
                     >
-                      ← Change number
+                      <ChevronLeft className="size-4" /> Change number
                     </button>
                     {resend > 0 ? (
-                      <span className="text-muted-foreground tabular-nums">
-                        Resend in <span className="font-semibold text-tb-navy">{resend}s</span>
+                      <span className="text-muted-foreground font-bold tabular-nums">
+                        Resend in <span className="text-tb-navy">{resend}s</span>
                       </span>
                     ) : (
                       <button
                         type="button"
                         disabled={busy}
                         onClick={handleResend}
-                        className="text-tb-blue font-semibold flex items-center gap-1 disabled:opacity-60 hover:underline"
+                        className="text-tb-blue font-bold flex items-center gap-1 disabled:opacity-60 hover:underline"
                       >
                         {loading === "send" ? (
                           <span className="spinner" />
@@ -659,30 +663,31 @@ function LoginPage() {
           </div>
 
           {/* Footer trust row */}
-          <div className="mt-5 flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
             <span className="flex items-center gap-1">
-              <Lock className="size-3 text-emerald-500" /> 256-bit secure
+              <Lock className="size-3.5 text-emerald-500" /> 256-bit secure
             </span>
             <span className="size-1 rounded-full bg-border" />
             <span className="flex items-center gap-1">
-              <Star className="size-3 text-amber-400 fill-amber-400" /> 12K+ creators
+              <Star className="size-3.5 text-amber-400 fill-amber-400" /> 12K+ creators
             </span>
             <span className="size-1 rounded-full bg-border" />
             <a
-              className="text-tb-blue font-medium hover:underline"
+              className="text-tb-blue hover:underline"
               href="mailto:support@testbook.com"
             >
               Help
             </a>
           </div>
 
-          {/* Floating social proof pill */}
-          <div className="mt-4 flex items-center justify-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-border shadow-sm text-xs text-muted-foreground">
-              <Sparkles className="size-3 text-tb-blue" />
-              <span>Avg. payout <span className="font-bold text-tb-navy">₹11,200</span> per creator</span>
+          {/* Floating dynamic incentive indicator */}
+          <div className="flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-border/80 shadow-sm text-xs text-muted-foreground font-semibold">
+              <Sparkles className="size-3.5 text-tb-blue" />
+              <span>Average payout <span className="font-extrabold text-tb-navy">₹11,200</span> per creator</span>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -701,20 +706,20 @@ function StepDot({
   label: string;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 select-none">
       <div
-        className={`size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-sm ${
+        className={`size-7 rounded-full flex items-center justify-center text-xs font-black transition-all shadow-sm ${
           done
             ? "tb-gradient text-white shadow-blue-200"
             : active
-              ? "border-2 border-tb-blue text-tb-blue bg-white shadow-blue-100"
+              ? "border-2 border-tb-blue text-tb-blue bg-white shadow-blue-100 scale-105"
               : "border-2 border-border text-muted-foreground bg-white"
         }`}
       >
-        {done ? <CheckCircle2 className="size-4" /> : n}
+        {done ? <CheckCircle2 className="size-3.5" /> : n}
       </div>
       <span
-        className={`text-xs font-semibold ${active ? "text-tb-navy" : "text-muted-foreground"}`}
+        className={`text-xs font-extrabold ${active ? "text-tb-navy" : "text-muted-foreground"} hidden xs:inline`}
       >
         {label}
       </span>

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pkill -f \"vite dev\")",
+      "Bash(curl -s http://localhost:8081/)",
+      "Bash(curl -s http://localhost:8080/)"
+    ]
+  }
+}

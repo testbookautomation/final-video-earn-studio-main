@@ -1,22 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Mail, Instagram, Youtube, Globe, ArrowRight, Phone } from "lucide-react";
+import { Mail, Instagram, Youtube, Globe, Phone } from "lucide-react";
+import { openModal } from "@/lib/modal-events";
 
 export function Footer() {
   return (
     <footer className="bg-[#07103a] text-white">
-      {/* Top CTA strip */}
-      <div className="border-b border-white/8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div>
-            <div className="text-base sm:text-lg font-bold">Ready to start earning?</div>
-            <div className="text-sm text-white/60 mt-0.5">Send your first video to Testbook. Approval in 24 hours.</div>
-          </div>
-          <Link to="/submit" className="btn-orange shrink-0 w-full sm:w-auto justify-center">
-            Send your video <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      </div>
-
       {/* Main columns */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-12 grid gap-6 sm:gap-8 sm:grid-cols-2 md:grid-cols-4">
         {/* Brand */}
@@ -57,16 +45,16 @@ export function Footer() {
           <ul className="space-y-2.5">
             {[
               { to: "/", label: "How it works" },
-              { to: "/how-to", label: "How To" },
               { to: "/submit", label: "Send a video" },
               { to: "/dashboard", label: "My dashboard" },
             ].map(({ to, label }) => (
               <li key={to}>
-                <Link to={to} className="text-sm text-white/65 hover:text-white transition-colors">
-                  {label}
-                </Link>
+                <Link to={to} className="text-sm text-white/65 hover:text-white transition-colors">{label}</Link>
               </li>
             ))}
+            <li>
+              <Link to="/how-to" className="text-sm text-white/65 hover:text-white transition-colors">How To</Link>
+            </li>
           </ul>
         </div>
 
@@ -75,9 +63,7 @@ export function Footer() {
           <div className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Legal</div>
           <ul className="space-y-2.5">
                 <li>
-                <Link to="/terms" className="text-sm text-white/65 hover:text-white transition-colors">
-                  Terms of campaign
-                </Link>
+                <button onClick={() => openModal("terms")} className="text-sm text-white/65 hover:text-white transition-colors">Terms of campaign</button>
               </li>
               {["Privacy policy", "Content guidelines", "Refund & payout policy"].map((label) => (
               <li key={label}>

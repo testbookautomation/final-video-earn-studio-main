@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   CheckCircle2, X, ArrowRight, Video, Lightbulb, ListChecks,
-  AlertTriangle, Smartphone, PlayCircle,
+  AlertTriangle, Smartphone, PlayCircle, Clock, Volume2, Type, Monitor, FileVideo
 } from "lucide-react";
 
 export const Route = createFileRoute("/how-to")({
@@ -25,12 +25,12 @@ const sopSteps = [
 ];
 
 const specs = [
-  { k: "Aspect ratio", v: "9:16 vertical" },
-  { k: "Duration", v: "30–60 seconds" },
-  { k: "Resolution", v: "1080×1920 min" },
-  { k: "Audio", v: "Clear voiceover, no background music over voice" },
-  { k: "On-screen text", v: "Recommended (Hindi/regional ok)" },
-  { k: "Format", v: "MP4 / MOV" },
+  { Icon: Smartphone, k: "Aspect Ratio", v: "9:16 vertical", bg: "bg-blue-50 text-tb-blue" },
+  { Icon: Clock, k: "Duration", v: "30–60 seconds", bg: "bg-amber-50 text-amber-600" },
+  { Icon: Monitor, k: "Resolution", v: "1080×1920 min", bg: "bg-violet-50 text-violet-600" },
+  { Icon: Volume2, k: "Audio", v: "Clear voiceover, no bg music over voice", bg: "bg-emerald-50 text-emerald-600" },
+  { Icon: Type, k: "On-screen text", v: "Recommended (Hindi/regional ok)", bg: "bg-rose-50 text-rose-600" },
+  { Icon: FileVideo, k: "Format", v: "MP4 / MOV", bg: "bg-indigo-50 text-indigo-600" },
 ];
 
 const dos = [
@@ -119,12 +119,22 @@ function SOPPage() {
 
         {/* Specs */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><Smartphone className="size-5 text-tb-blue" /> Tech specs</h2>
-          <div className="mt-5 card p-2 divide-y divide-border">
+          <h2 className="text-xl sm:text-2xl font-bold text-tb-navy flex items-center gap-2">
+            <Smartphone className="size-5 text-tb-blue" /> Technical specifications
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Ensure your recording settings match these requirements before exporting your final cut.
+          </p>
+          <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-3.5">
             {specs.map((s) => (
-              <div key={s.k} className="flex items-center justify-between p-3 text-sm">
-                <span className="text-muted-foreground">{s.k}</span>
-                <span className="font-semibold text-tb-navy">{s.v}</span>
+              <div key={s.k} className="card p-5 hover-lift flex flex-col justify-between bg-white border-border/60 shadow-sm">
+                <div>
+                  <div className={`size-9 rounded-xl ${s.bg} flex items-center justify-center shadow-sm`}>
+                    <s.Icon className="size-5" />
+                  </div>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mt-3.5">{s.k}</div>
+                  <div className="text-xs sm:text-sm font-bold text-tb-navy mt-1 leading-snug">{s.v}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -132,22 +142,36 @@ function SOPPage() {
 
         {/* Do / Don't */}
         <div className="grid md:grid-cols-2 gap-5">
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-tb-navy flex items-center gap-2"><ListChecks className="size-5 text-emerald-600" /> Do</h3>
-            <ul className="mt-4 space-y-2.5">
+          <div className="card p-6 bg-gradient-to-br from-white to-emerald-50/20 border-emerald-100/60 shadow-sm hover:shadow-md transition-all duration-300">
+            <h3 className="text-lg font-bold text-tb-navy flex items-center gap-2">
+              <span className="size-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <ListChecks className="size-4.5" />
+              </span>
+              Do
+            </h3>
+            <ul className="mt-5 space-y-3">
               {dos.map((d) => (
-                <li key={d} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="size-4 text-emerald-600 mt-0.5 shrink-0" /> {d}
+                <li key={d} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
+                  <CheckCircle2 className="size-4 text-emerald-500 mt-0.5 shrink-0" /> {d}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-tb-navy flex items-center gap-2"><X className="size-5 text-red-600" /> Don't</h3>
-            <ul className="mt-4 space-y-2.5">
+          
+          <div className="card p-6 bg-gradient-to-br from-white to-rose-50/20 border-rose-100/60 shadow-sm hover:shadow-md transition-all duration-300">
+            <h3 className="text-lg font-bold text-tb-navy flex items-center gap-2">
+              <span className="size-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <X className="size-4.5" />
+              </span>
+              Don't
+            </h3>
+            <ul className="mt-5 space-y-3">
               {donts.map((d) => (
-                <li key={d} className="flex items-start gap-2 text-sm">
-                  <X className="size-4 text-red-600 mt-0.5 shrink-0" /> {d}
+                <li key={d} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed font-semibold">
+                  <span className="size-4 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mt-0.5 shrink-0">
+                    <X className="size-3" />
+                  </span>
+                  {d}
                 </li>
               ))}
             </ul>
@@ -156,12 +180,20 @@ function SOPPage() {
 
         {/* Rejections */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><AlertTriangle className="size-5 text-amber-600" /> Top reasons we reject</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-tb-navy flex items-center gap-2">
+            <AlertTriangle className="size-5 text-amber-600 animate-pulse" /> Top reasons we reject
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Avoid these common pitfalls to make sure your submission is approved instantly.
+          </p>
           <div className="mt-5 grid sm:grid-cols-2 gap-4">
             {rejections.map((r) => (
-              <div key={r.title} className="card p-5 border-l-4 border-amber-400">
-                <div className="font-semibold text-tb-navy">{r.title}</div>
-                <p className="text-sm text-muted-foreground mt-1">{r.desc}</p>
+              <div key={r.title} className="card p-5 hover-lift border-l-4 border-amber-400 bg-white shadow-sm">
+                <div className="font-bold text-tb-navy text-sm sm:text-base flex items-center gap-2">
+                  <span className="size-2 rounded-full bg-amber-400" />
+                  {r.title}
+                </div>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">{r.desc}</p>
               </div>
             ))}
           </div>
@@ -169,18 +201,22 @@ function SOPPage() {
 
         {/* Handoff */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><ListChecks className="size-5 text-tb-blue" /> Handoff checklist</h2>
-          <p className="mt-2 text-sm text-muted-foreground">You do not need to publish it yourself or write the final publishing copy. Upload a final video file that Testbook can publish.</p>
-          <div className="mt-5 card p-5">
+          <h2 className="text-xl sm:text-2xl font-bold text-tb-navy flex items-center gap-2">
+            <ListChecks className="size-5 text-tb-blue" /> Handoff checklist
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            You do not need to publish it yourself or write the final copy. Upload a finished file and let us handle the rest.
+          </p>
+          <div className="mt-5 card p-5 bg-white shadow-sm">
             <div className="grid sm:grid-cols-3 gap-3">
               {[
                 { t: "Final cut", d: "No watermarks, no drafts, no editing timelines visible." },
                 { t: "Clear audio", d: "Voice should be understandable without music overpowering it." },
                 { t: "Publish-ready", d: "Testbook will prepare the final copy, publish the video, and track views." },
               ].map((item) => (
-                <div key={item.t} className="rounded-xl border border-border p-4 bg-secondary/40">
-                  <div className="font-semibold text-tb-navy text-sm">{item.t}</div>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{item.d}</p>
+                <div key={item.t} className="rounded-2xl border border-border/80 p-4.5 bg-slate-50/50 hover:bg-white hover:border-tb-blue/20 hover:shadow-sm transition-all duration-300">
+                  <div className="font-bold text-tb-navy text-xs sm:text-sm">{item.t}</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">{item.d}</p>
                 </div>
               ))}
             </div>
@@ -189,14 +225,32 @@ function SOPPage() {
 
         {/* Demo videos */}
         <div>
-          <h2 className="text-2xl font-bold text-tb-navy flex items-center gap-2"><PlayCircle className="size-5 text-tb-blue" /> Demo videos: how to make yours</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Watch these examples before recording. Follow the structure, then upload your own final file to Testbook.</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {demoVideos.map((video) => (
-              <div key={video.src} className="card overflow-hidden">
-                <div className="bg-tb-navy aspect-[9/16]">
+          <h2 className="text-xl sm:text-2xl font-bold text-tb-navy flex items-center gap-2">
+            <PlayCircle className="size-5 text-tb-blue animate-pulse" /> Reference masterclass
+          </h2>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Watch these benchmark examples before recording. Learn the hooks, pacing, and clear calls to action.
+          </p>
+          
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {demoVideos.map((video, idx) => (
+              <div 
+                key={video.src} 
+                className="card p-4 hover-lift bg-white border-border/70 shadow-sm flex flex-col justify-between items-center group relative overflow-hidden"
+              >
+                {/* Simulated Premium Vertical Smartphone Chassis */}
+                <div 
+                  className="relative w-[155px] h-[275px] rounded-[2rem] border-[5px] border-slate-900 bg-slate-950 shadow-xl overflow-hidden ring-4 ring-slate-800/10 flex items-center justify-center group-hover:scale-102 group-hover:shadow-2xl transition-all duration-500"
+                >
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-slate-900 rounded-b-xl z-20 flex justify-center items-center">
+                    <div className="size-1 rounded-full bg-slate-700/80 mr-1.5" />
+                    <div className="w-6 h-0.75 rounded-full bg-slate-800" />
+                  </div>
+                  
+                  {/* Video player */}
                   <video
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover opacity-95 relative z-10"
                     controls
                     playsInline
                     preload="metadata"
@@ -205,10 +259,28 @@ function SOPPage() {
                   >
                     <source src={video.src} type="video/mp4" />
                   </video>
+                  
+                  {/* Premium glass gloss reflection */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none z-20" />
+                  
+                  {/* Format tag badge */}
+                  <div className="absolute top-5 left-2.5 z-20">
+                    <span className="text-[8px] font-black uppercase tracking-wider bg-tb-blue/90 text-white px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/10 shadow-sm">
+                      Benchmark {idx + 1}
+                    </span>
+                  </div>
                 </div>
-                <div className="p-4">
-                  <div className="font-bold text-tb-navy text-sm">{video.title}</div>
-                  <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{video.note}</p>
+
+                {/* Video text & note container */}
+                <div className="p-2 text-left w-full mt-4 flex-1 flex flex-col justify-between">
+                  <div className="font-extrabold text-tb-navy text-sm tracking-tight group-hover:text-tb-blue transition-colors">
+                    {video.title}
+                  </div>
+                  <div 
+                    className="mt-2.5 p-3 rounded-2xl bg-secondary/35 border border-secondary/50 text-[11px] sm:text-xs text-muted-foreground leading-relaxed font-semibold flex-1 flex items-center"
+                  >
+                    {video.note}
+                  </div>
                 </div>
               </div>
             ))}
@@ -216,7 +288,7 @@ function SOPPage() {
         </div>
 
         {/* CTA */}
-        <div className="card p-8 tb-gradient text-white text-center">
+        <div className="card border-transparent p-8 tb-gradient text-white text-center">
           <h2 className="text-2xl font-bold tb-text-gradient">Brief read. Camera ready?</h2>
           <p className="mt-2 text-sm text-white/80">Upload your video to Testbook — approval comes back within 24 hours.</p>
           <Link to="/submit" className="btn-orange mt-5 inline-flex">Send your video <ArrowRight className="size-4" /></Link>
