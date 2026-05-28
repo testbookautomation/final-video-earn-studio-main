@@ -49,7 +49,7 @@
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0.85rem;
 
   --background: hsl(220 33% 98%);
   --foreground: hsl(224 71.4% 4.1%);
@@ -95,9 +95,11 @@
     overflow-x: hidden;
     scroll-behavior: smooth;
     height: 100%;
+    max-width: 100%;
   }
   body {
     overflow-x: hidden;
+    max-width: 100%;
     background-color: var(--tb-bg);
     background-image: 
       radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.02) 0px, transparent 50%),
@@ -115,7 +117,7 @@
   /* Prevent iOS tap flash and remove 300 ms tap delay */
   button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   /* Enforce min sizing for tap accessibility */
-  button, [role="button"], a.btn-primary, a.btn-orange { min-height: 48px; }
+  button, [role="button"], a.btn-primary, a.btn-orange { min-height: 46px; }
   /* Prevent iOS Safari from zooming on input focus (requires font-size >= 16px) */
   input, select, textarea { font-size: 16px !important; }
   /* Media styling */
@@ -123,7 +125,12 @@
   
   /* On mobile bump bottom clearance to include bottom navigation + safe area */
   @media (max-width: 767px) {
-    main { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+    body {
+      background-image: none;
+      background-attachment: scroll;
+      font-size: 0.94rem;
+    }
+    main { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
   }
   /* Landscape mode: reduce vertical padding so content fits */
   @media (max-height: 500px) and (orientation: landscape) {
@@ -181,7 +188,7 @@
   /* High-end premium buttons with hardware-accelerated glossy hover sheens */
   .btn-primary {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-    padding: 0.75rem 1.5rem; border-radius: var(--radius-md);
+    padding: 0.75rem 1.25rem; border-radius: var(--radius-md);
     background-image: linear-gradient(135deg, var(--tb-navy), var(--tb-blue));
     color: white; font-weight: 700; font-size: 0.95rem;
     box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.3);
@@ -214,7 +221,7 @@
   
   .btn-orange {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-    padding: 0.75rem 1.5rem; border-radius: var(--radius-md);
+    padding: 0.75rem 1.25rem; border-radius: var(--radius-md);
     background-image: linear-gradient(135deg, var(--tb-orange), var(--tb-orange-dark));
     color: white; font-weight: 700; font-size: 0.95rem;
     box-shadow: 0 4px 14px 0 rgba(255, 122, 26, 0.35);
@@ -247,7 +254,7 @@
 
   .btn-ghost {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-    padding: 0.75rem 1.5rem; border-radius: var(--radius-md);
+    padding: 0.75rem 1.25rem; border-radius: var(--radius-md);
     background: transparent; color: var(--tb-navy); font-weight: 600; font-size: 0.95rem;
     border: 1.5px solid var(--border);
     transition: all 0.25s ease;
@@ -275,6 +282,13 @@
   .badge-green { background: rgba(16, 185, 129, 0.07); color: #047857; border-color: rgba(16, 185, 129, 0.18); }
   .badge-amber { background: rgba(245, 158, 11, 0.08); color: #b45309; border-color: rgba(245, 158, 11, 0.18); }
   .badge-red   { background: rgba(239, 68, 68, 0.07);  color: #b91c1c; border-color: rgba(239, 68, 68, 0.18); }
+
+  .mobile-app-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.35);
+  }
 
   /* Interactive modern input fields */
   .input-field {
@@ -435,6 +449,38 @@ input[type="range"].accent-tb-blue {
   transform: scale(0.94);
 }
 
+@media (max-width: 767px) {
+  .card,
+  .glass {
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.35);
+  }
+
+  .card:hover,
+  .hover-lift:hover {
+    transform: none;
+  }
+
+  .btn-primary,
+  .btn-orange,
+  .btn-ghost {
+    min-height: 46px;
+    border-radius: 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .badge {
+    padding: 0.25rem 0.6rem;
+    font-size: 0.68rem;
+    letter-spacing: 0;
+  }
+
+  .input-field {
+    border-radius: 0.9rem;
+    padding: 0.78rem 0.9rem;
+  }
+}
+
 /* Special premium shadows and animations for gamified UI */
 .glow-emerald {
   box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.25), 0 8px 10px -6px rgba(16, 185, 129, 0.25);
@@ -470,3 +516,4 @@ input[type="range"].accent-tb-blue {
 .glow-violet {
   box-shadow: 0 12px 30px -5px rgba(139, 92, 246, 0.2), 0 8px 15px -6px rgba(139, 92, 246, 0.2);
 }
+

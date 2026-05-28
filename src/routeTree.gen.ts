@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as HowToRouteImport } from './routes/how-to'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWebhookRouteImport } from './routes/api/webhook'
@@ -38,6 +40,16 @@ const LoginRoute = LoginRouteImport.update({
 const HowToRoute = HowToRouteImport.update({
   id: '/how-to',
   path: '/how-to',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -102,6 +114,8 @@ const ApiAuthSendOtpRoute = ApiAuthSendOtpRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
   '/terms': typeof TermsRoute
@@ -118,6 +132,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
   '/terms': typeof TermsRoute
@@ -136,6 +152,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/admin': typeof AdminRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/how-to': typeof HowToRoute
   '/login': typeof LoginRoute
   '/terms': typeof TermsRoute
@@ -154,6 +172,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
+    | '/how-it-works'
     | '/how-to'
     | '/login'
     | '/terms'
@@ -170,6 +190,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
+    | '/how-it-works'
     | '/how-to'
     | '/login'
     | '/terms'
@@ -187,6 +209,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/admin'
+    | '/how-it-works'
     | '/how-to'
     | '/login'
     | '/terms'
@@ -205,6 +229,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AdminRoute: typeof AdminRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   HowToRoute: typeof HowToRoute
   LoginRoute: typeof LoginRoute
   TermsRoute: typeof TermsRoute
@@ -239,6 +265,20 @@ declare module '@tanstack/react-router' {
       path: '/how-to'
       fullPath: '/how-to'
       preLoaderRoute: typeof HowToRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -345,6 +385,8 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AdminRoute: AdminRoute,
+  HowItWorksRoute: HowItWorksRoute,
   HowToRoute: HowToRoute,
   LoginRoute: LoginRoute,
   TermsRoute: TermsRoute,

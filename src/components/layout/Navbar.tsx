@@ -43,12 +43,12 @@ export function Navbar() {
   const userLabel = user?.name?.trim() || (user?.phone ? `+91 ${user.phone.slice(-4)}` : "");
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/75 border-b border-border/80 shadow-[0_2px_20px_rgba(0,0,0,0.02)]" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/90 md:bg-white/75 border-b border-border/80 shadow-[0_2px_20px_rgba(0,0,0,0.02)]" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
+      <div className="mx-auto max-w-7xl px-3.5 sm:px-6 h-[52px] sm:h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-          <img src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png" alt="Testbook" className="h-8 w-auto" />
+          <img src="https://cdn.testbook.com/1755173671769-testbook-logo.png/1755173673.png" alt="Testbook" className="h-7 sm:h-8 w-auto" />
           <div className="h-5 w-px bg-border/80" />
-          <span className="text-[11px] font-black text-tb-blue tracking-widest uppercase bg-blue-50 border border-blue-100/50 px-2 py-0.5 rounded-md">Creators Lab</span>
+          <span className="text-[9px] sm:text-[11px] font-black text-tb-blue tracking-widest uppercase bg-blue-50 border border-blue-100/50 px-1.5 sm:px-2 py-0.5 rounded-md">Creators Lab</span>
         </Link>
 
         {/* Desktop Nav Items */}
@@ -105,12 +105,12 @@ export function Navbar() {
               )}
             </div>
           ) : location.pathname !== "/login" ? (
-            <Link to="/login" className="btn-primary hidden md:inline-flex text-xs px-5 py-2 min-h-[40px] shadow-sm">Login</Link>
+            <Link to="/login" className="btn-primary hidden md:inline-flex text-xs px-3.5 sm:px-5 py-2 min-h-[38px] sm:min-h-[40px] shadow-sm">Login</Link>
           ) : null}
 
           {/* Mobile hamburger menu toggle */}
           <button 
-            className="md:hidden size-10 rounded-xl border border-border/80 flex items-center justify-center hover:bg-secondary/40 transition-colors active:scale-95" 
+            className="md:hidden size-10 rounded-xl border border-border/80 flex items-center justify-center hover:bg-secondary/40 transition-colors active:scale-95 bg-white" 
             onClick={() => setOpen((v) => !v)} 
             aria-label="Menu"
           >
@@ -122,7 +122,7 @@ export function Navbar() {
       {/* Mobile Slide-down Menu */}
       {open && (
         <div className="md:hidden border-t border-border/60 bg-white/95 backdrop-blur-xl fade-up shadow-lg relative z-50">
-          <div className="px-4 py-4 flex flex-col gap-1.5">
+          <div className="px-3.5 py-3 flex flex-col gap-1.5">
             {navLinks.map((l) => {
               const active = location.pathname === l.to;
               return (
