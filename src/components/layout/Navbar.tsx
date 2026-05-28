@@ -5,7 +5,9 @@ import { clearUser, getUser, type TBUser } from "@/lib/auth";
 
 const navLinks = [
   { to: "/", label: "Home" },
-  { to: "/submit", label: "Send Video" },
+  { to: "/how-it-works", label: "How It Works" },
+  { to: "/how-to", label: "Guidelines" },
+  { to: "/submit", label: "Submit Video" },
   { to: "/dashboard", label: "Dashboard" },
 ] as const;
 
@@ -72,12 +74,6 @@ export function Navbar() {
               </Link>
             );
           })}
-          <Link
-            to="/how-to"
-            className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 text-foreground/75 hover:text-tb-navy hover:bg-secondary/60"
-          >
-            How To
-          </Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -98,8 +94,8 @@ export function Navbar() {
                     <div className="text-muted-foreground truncate font-medium mt-0.5">+91 {user.phone}</div>
                   </div>
                   <Link to="/dashboard" className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl text-foreground/80 hover:text-tb-blue hover:bg-blue-50/60 transition-colors"><LayoutDashboard className="size-4" /> Dashboard</Link>
-                  <Link to="/submit" className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl text-foreground/80 hover:text-tb-blue hover:bg-blue-50/60 transition-colors"><Send className="size-4" /> Send video</Link>
-                  <Link to="/how-to" className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl text-foreground/80 hover:text-tb-blue hover:bg-blue-50/60 transition-colors"><FileText className="size-4" /> How To</Link>
+                  <Link to="/submit" className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl text-foreground/80 hover:text-tb-blue hover:bg-blue-50/60 transition-colors"><Send className="size-4" /> Submit Video</Link>
+                  <Link to="/how-to" className="flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl text-foreground/80 hover:text-tb-blue hover:bg-blue-50/60 transition-colors"><FileText className="size-4" /> Guidelines</Link>
                   <button onClick={() => { clearUser(); navigate({ to: "/" }); }} className="w-full text-left flex items-center gap-2.5 px-3 py-2.5 text-sm font-bold rounded-xl hover:bg-red-50 text-red-600 border-t border-border/50 mt-1 transition-colors"><LogOut className="size-4" /> Sign out</button>
                 </div>
               )}
@@ -139,13 +135,6 @@ export function Navbar() {
                 </Link>
               );
             })}
-            <Link
-              to="/how-to"
-              onClick={() => setOpen(false)}
-              className="px-4 py-3 rounded-xl text-sm font-bold text-foreground/80 hover:bg-secondary/50 hover:text-tb-navy"
-            >
-              How To
-            </Link>
             {user ? (
               <div className="mt-2 pt-2 border-t border-border/50 flex flex-col gap-2">
                 <div className="px-4 py-2 bg-secondary/30 rounded-xl">

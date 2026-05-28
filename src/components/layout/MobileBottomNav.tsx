@@ -1,14 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, FileText, Send, LayoutDashboard } from "lucide-react";
+import { Home, FileText, Upload, LayoutDashboard } from "lucide-react";
 
 export function MobileBottomNav() {
   const { location } = useRouterState();
 
   const items = [
     { type: "link" as const, to: "/", label: "Home", Icon: Home },
-    { type: "link" as const, to: "/how-to", label: "How To", Icon: FileText },
-    { type: "link" as const, to: "/submit", label: "Submit", Icon: Send },
-    { type: "link" as const, to: "/dashboard", label: "Stats", Icon: LayoutDashboard },
+    { type: "link" as const, to: "/how-to", label: "Guidelines", Icon: FileText },
+    { type: "link" as const, to: "/submit", label: "Submit", Icon: Upload },
+    { type: "link" as const, to: "/dashboard", label: "Dashboard", Icon: LayoutDashboard },
   ];
 
   return (
